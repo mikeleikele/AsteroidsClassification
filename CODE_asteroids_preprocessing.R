@@ -18,5 +18,5 @@ asteroids_datatype <- sapply(asteroids_data, class)
 
 #remove object useless
 rm(cat_cols,log_cols,asteroids_datatype)
-save(asteroids_data, file="asteroids_dataset.RData")
+save(asteroids_data, file="DATA_asteroids_dataset.RData")
 rm(asteroids_data)

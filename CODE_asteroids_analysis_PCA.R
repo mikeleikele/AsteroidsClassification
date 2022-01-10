@@ -4,7 +4,7 @@ library("FactoMineR")
 library("factoextra")
 
 #load dataset RObject as asteroids_data
-load("asteroids_dataset.RData")
+load("DATA_asteroids_dataset.RData")
 
 #PCA feature extration
 
