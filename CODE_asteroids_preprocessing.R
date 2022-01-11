@@ -1,6 +1,6 @@
 setwd("~/Github/AsteroidsClassification")
 #load data
-asteroids_data = read.csv("DATASET/orbits.csv", header = TRUE)
+asteroids_data = read.csv("DATASET/orbits.csv", header = TRUE, row.name=1)
 
 #datatype change chars -> fact or int -> boolean
 cat_cols <- c("Epoch..TDB.","Classification","Orbital.Reference")
