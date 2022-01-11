@@ -1,5 +1,5 @@
 setwd("~/Github/AsteroidsClassification")
-install.packages(c("FactoMineR", "factoextra"))
+
 library("FactoMineR")
 library("factoextra")
 
