@@ -63,6 +63,17 @@ png(img_name_plot)
   )
   dev.off()
 
+img_name_plot <- paste("IMG_asteroids_pca_", "individual_class_classification" ,".png", sep = "")
+png(img_name_plot)
+fviz_pca_biplot(asteroids_pca,
+                geom.ind = "point",
+                col.ind = asteroids_data$Classification,
+                palette = c("#00AFBB", "#E7B800", "#FC4E07"),
+                addEllipses = TRUE,
+                legend.title = "Groups"
+)
+dev.off()
+  
 var$coord
 var$cos2
 var$contrib

@@ -63,7 +63,9 @@ for (i in 1:length(folds)) {
   }else{
     decisionTree.Hazardous.IGHE.stats <- decisionTree.Hazardous.IGHE.stats + decisionTree.Hazardous.IGHE.confusion_matrix
   }
+  rm(name_fold, fold.train, fold.valid)
 }
+rm(i)
 decisionTree.Hazardous.GINI.stats <- decisionTree.Hazardous.GINI.stats / length(folds)
 decisionTree.Hazardous.IGHE.stats <- decisionTree.Hazardous.IGHE.stats / length(folds)
 
@@ -80,18 +82,18 @@ png(img_name_plot)
 img_name_plot <- paste("IMG_asteroids_model_decisiontree_tree", "Hazardous_fold_split", ".png", sep = "")
 png(img_name_plot)
   par(mfrow=c(2,2)) 
-  barplot(as.numeric(folds.stats.trainsplit),main="Train",names.arg = folds.stats.namesplit, col='#a71e3b')
-  barplot(as.numeric(folds.stats.validsplit),main="Valid",names.arg = folds.stats.namesplit, col='#a71e3b')
+  barplot(as.numeric(folds.stats.Hazardous.trainsplit),main="Train",names.arg = folds.stats.namesplit, col='#a71e3b')
+  barplot(as.numeric(folds.stats.Hazardous.validsplit),main="Valid",names.arg = folds.stats.namesplit, col='#a71e3b')
   dev.off()
 
 img_name_plot <- paste("IMG_asteroids_model_decisiontree_tree_", "Hazardous_CP_TABLE" ,".png", sep = "")
   png(img_name_plot)
-  printcp(printcp(decisionTreeGINI))
+  printcp(decisionTree.Hazardous.GINI)
   dev.off()
   
 img_name_plot <- paste("IMG_asteroids_model_decisiontree_tree_", "Hazardous_CP_PLOT" ,".png", sep = "")
   png(img_name_plot)
-  plotcp(printcp(decisionTreeGINI)
+  plotcp(decisionTree.Hazardous.GINI)
   dev.off()
 
   #prunedDecisionTree = prune(decisionTree, cp= .011)
@@ -102,7 +104,10 @@ png(img_name_plot)
   fancyRpartPlot(decisionTree.Hazardous.GINI)
   dev.off()
 
-  
+rm(folds.stats.namesplit, folds.stats.Hazardous.trainsplit, folds.stats.Hazardous.validsplit, decisionTree.Hazardous.GINI.stats, decisionTree.Hazardous.IGHE.stats)
+rm(decisionTree.Hazardous.GINI, decisionTree.Hazardous.IGHE)
+rm(decisionTree.Hazardous.GINI.prediction, decisionTree.Hazardous.IGHE.prediction, decisionTree.Hazardous.GINI.confusion_matrix, decisionTree.Hazardous.IGHE.confusion_matrix)
+    
 ## Classification Asteroids
 folds.stats.namesplit <- list()
 
@@ -116,7 +121,7 @@ folds.stats.Classification.trainsplit.Aten <- list()
 folds.stats.Classification.validsplit.Aten <- list()
 
 decisionTree.Classification.GINI.stats <- NULL
-decisionTree.Classification.IGHE.stats <- NULL
+#decisionTree.Classification.IGHE.stats <- NULL
 
 for (i in 1:length(folds)) {
   fold.valid <- ldply(folds[i], data.frame)
@@ -140,21 +145,21 @@ for (i in 1:length(folds)) {
   folds.stats.Classification.trainsplit.Aten <- append(folds.stats.Classification.trainsplit.Aten, round(sum(fold.train$Classification == "Aten Asteroid")/length(fold.train$Classification)*100, 4))
   folds.stats.Classification.validsplit.Aten <- append(folds.stats.Classification.validsplit.Aten, round(sum(fold.valid$Classification == "Aten Asteroid")/length(fold.valid$Classification)*100, 4))
   
-  decisionTree.Classification.GINI <- rpart(Classification ~ Orbit.Axis..AU. + Orbit.Eccentricity + Orbit.Inclination..deg. + Perihelion.Argument..deg. + Node.Longitude..deg. + Mean.Anomoly..deg. + Perihelion.Distance..AU. + Aphelion.Distance..AU. + Orbital.Period..yr. + Minimum.Orbit.Intersection.Distance..AU. + Asteroid.Magnitude,#Orbit.Axis..AU. + Orbit.Eccentricity + Orbit.Inclination..deg. + Perihelion.Argument..deg. + Node.Longitude..deg. + Mean.Anomoly..deg. + Perihelion.Distance..AU. + Aphelion.Distance..AU. + Orbital.Period..yr. + Minimum.Orbit.Intersection.Distance..AU. + Asteroid.Magnitude,
+  decisionTree.Classification.GINI <- rpart(Classification ~ Orbit.Axis..AU. + Orbit.Eccentricity + Orbit.Inclination..deg. + Perihelion.Argument..deg. + Node.Longitude..deg. + Mean.Anomoly..deg. + Perihelion.Distance..AU. + Aphelion.Distance..AU. + Orbital.Period..yr. + Minimum.Orbit.Intersection.Distance..AU. + Asteroid.Magnitude,#
     data=fold.train, method="class",  cp= 0.001) #. all var
   
-  decisionTree.Classification.IGHE <- rpart(Classification ~ Orbit.Axis..AU. + Orbit.Eccentricity + Orbit.Inclination..deg. + Perihelion.Argument..deg. + Node.Longitude..deg. + Mean.Anomoly..deg. + Perihelion.Distance..AU. + Aphelion.Distance..AU. + Orbital.Period..yr. + Minimum.Orbit.Intersection.Distance..AU. + Asteroid.Magnitude,#Orbit.Axis..AU. + Orbit.Eccentricity + Orbit.Inclination..deg. + Perihelion.Argument..deg. + Node.Longitude..deg. + Mean.Anomoly..deg. + Perihelion.Distance..AU. + Aphelion.Distance..AU. + Orbital.Period..yr. + Minimum.Orbit.Intersection.Distance..AU. + Asteroid.Magnitude,
-    data=fold.train, method="class", parms <- list(split="information"), cp= 0.001) #. all var
+  #decisionTree.Classification.IGHE <- rpart(Classification ~ Orbit.Axis..AU. + Orbit.Eccentricity + Orbit.Inclination..deg. + Perihelion.Argument..deg. + Node.Longitude..deg. + Mean.Anomoly..deg. + Perihelion.Distance..AU. + Aphelion.Distance..AU. + Orbital.Period..yr. + Minimum.Orbit.Intersection.Distance..AU. + Asteroid.Magnitude,#
+  #  data=fold.train, method="class", parms <- list(split="information"), cp= 0.001) #. all var
   
   #salvo anche la comple 
   #altezza
   
   
   decisionTree.Classification.GINI.prediction <- predict(decisionTree.Classification.GINI, fold.valid, type = "class")
-  decisionTree.Classification.IGHE.prediction <- predict(decisionTree.Classification.IGHE, fold.valid, type = "class")
+  #decisionTree.Classification.IGHE.prediction <- predict(decisionTree.Classification.IGHE, fold.valid, type = "class")
   
   decisionTree.Classification.GINI.confusion_matrix <- table(fold.valid$Classification, decisionTree.Classification.GINI.prediction)
-  decisionTree.Classification.IGHE.confusion_matrix <- table(fold.valid$Classification, decisionTree.Classification.IGHE.prediction)
+  #decisionTree.Classification.IGHE.confusion_matrix <- table(fold.valid$Classification, decisionTree.Classification.IGHE.prediction)
   
   if (is.null(decisionTree.Classification.GINI.stats)){
     decisionTree.Classification.GINI.stats <- decisionTree.Classification.GINI.confusion_matrix
@@ -162,24 +167,27 @@ for (i in 1:length(folds)) {
     decisionTree.Classification.GINI.stats <- decisionTree.Classification.GINI.stats + decisionTree.Classification.GINI.confusion_matrix
   }
   
-  if (is.null(decisionTree.Classification.IGHE.stats)){
-    decisionTree.Classification.IGHE.stats <- decisionTree.Classification.IGHE.confusion_matrix
-  }else{
-    decisionTree.Classification.IGHE.stats <- decisionTree.Classification.IGHE.stats + decisionTree.Classification.IGHE.confusion_matrix
-  }
+  #if (is.null(decisionTree.Classification.IGHE.stats)){
+  #  decisionTree.Classification.IGHE.stats <- decisionTree.Classification.IGHE.confusion_matrix
+  #}else{
+  #  decisionTree.Classification.IGHE.stats <- decisionTree.Classification.IGHE.stats + decisionTree.Classification.IGHE.confusion_matrix
+  #}
+  rm(name_fold, fold.train, fold.valid)
 }
-decisionTree.Classification.GINI.stats <- decisionTree.Classification.GINI.stats / length(folds)
-decisionTree.Classification.IGHE.stats <- decisionTree.Classification.IGHE.stats / length(folds)
+rm(i)
+
+decisionTree.Classification.GINI.stats = decisionTree.Classification.GINI.stats / length(folds)
+#decisionTree.Classification.IGHE.stats = decisionTree.Classification.IGHE.stats / length(folds)
 
 img_name_plot <- paste("IMG_asteroids_model_decisiontree_tree_", "GINI_Classification_confusion" ,".png", sep = "")
 png(img_name_plot)
   grid.table(decisionTree.Classification.GINI.stats)
   dev.off()
 
-img_name_plot <- paste("IMG_asteroids_model_decisiontree_tree_", "IGHE_Classification_confusion" ,".png", sep = "")
-png(img_name_plot)
-  grid.table(decisionTree.Classification.IGHE.stats)
-  dev.off()
+#img_name_plot <- paste("IMG_asteroids_model_decisiontree_tree_", "IGHE_Classification_confusion" ,".png", sep = "")
+#png(img_name_plot)
+#  grid.table(decisionTree.Classification.IGHE.stats)
+#  dev.off()
  
 img_name_plot <- paste("IMG_asteroids_model_decisiontree_tree", "Classification_fold_split", ".png", sep = "")
 png(img_name_plot)
@@ -212,3 +220,8 @@ img_name_plot <- paste("IMG_asteroids_model_decisiontree_tree_","Classification_
 png(img_name_plot)
   fancyRpartPlot(decisionTree.Classification.GINI)
   dev.off()
+rm(folds.stats.namesplit, folds.stats.Classification.trainsplit.Amor, folds.stats.Classification.validsplit.Amor, folds.stats.Classification.trainsplit.Apohele, folds.stats.Classification.validsplit.Apohele, folds.stats.Classification.trainsplit.Apollo, folds.stats.Classification.validsplit.Apollo, folds.stats.Classification.trainsplit.Aten, folds.stats.Classification.validsplit.Aten, )
+rm(decisionTree.Classification.GINI)
+rm(decisionTree.Classification.GINI.stats, decisionTree.Classification.GINI.prediction, decisionTree.Classification.GINI.confusion_matrix)
+
+rm(asteroids_split, folds, img_name_plot, p)
