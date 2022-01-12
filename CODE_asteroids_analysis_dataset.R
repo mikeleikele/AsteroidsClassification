@@ -68,19 +68,47 @@ stats
 ## mean
 stats[columns[1]]['mean']
 
+
 #### make boxplot of each covariate
+
+
+plot_name <- paste("IMG_asteroids_barplot_", "numeric_covariates" ,".png", sep = "")
+
 
 x = numeric_covariates 
 
-par(mfrow = c (2,4))
+par(mfrow = c (2,2))
 
-for (i in 1:8) {
+png(plot_name)
+
+for (i in 1:4) {
   
   boxplot(x[,i], main=names(x)[i]) 
   
 }
+dev.off()
+
+
+plot_name <- paste("IMG_asteroids_barplot_", "numeric_covariates2" ,".png", sep = "")
+
+
+x = numeric_covariates 
+
+par(mfrow = c (2,2))
+
+png(plot_name)
+for (i in 4:8) {
+  
+  boxplot(x[,i], main=names(x)[i]) 
+  
+}
+dev.off()
+
+plot_name <- paste("IMG_asteroids_barplot_", "numeric_covariates3" ,".png", sep = "")
 
 par(mfrow = c (1,3))
+
+png(plot_name)
 
 for (i in 9:11) {
   
@@ -88,10 +116,16 @@ for (i in 9:11) {
   
 }
 
+dev.off()
+
+
 ### box plot factor variables
 
 x = factor_covariates 
 
+plot_name <- paste("IMG_asteroids_barplot_", "factor_covariates" ,".png", sep = "")
+
+png(plot_name)
 
 par(mfrow = c (1,3))
 
@@ -101,19 +135,44 @@ for (i in 1:3) {
   
 }
 
+dev.off()
 
 
 ### histogram numeric covariates
 
 x = numeric_covariates 
 
-par(mfrow = c (2,4))
+plot_name <- paste("IMG_asteroids_histogram_", "numeric_covariates" ,".png", sep = "")
 
-for (i in 1:8) {
+png(plot_name)
+
+
+par(mfrow = c (2,2))
+
+for (i in 1:4) {
   
   hist(x[,i], main=names(x)[i]) 
   
 }
+
+dev.off()
+
+plot_name <- paste("IMG_asteroids_histogram_", "numeric_covariates2" ,".png", sep = "")
+
+png(plot_name)
+
+
+par(mfrow = c (2,2))
+
+for (i in 5:8) {
+  
+  hist(x[,i], main=names(x)[i]) 
+  
+}
+
+dev.off()
+
+plot_name <- paste("IMG_asteroids_histogram_", "numeric_covariates3" ,".png", sep = "")
 
 par(mfrow = c (1,3))
 
@@ -123,6 +182,7 @@ for (i in 9:11) {
   
 }
 
+dev.off()
 
 
 library(caret)
