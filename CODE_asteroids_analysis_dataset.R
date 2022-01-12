@@ -37,6 +37,9 @@ numeric_covariates = asteroids_data[,c("Orbit.Axis..AU." , "Orbit.Eccentricity" 
                                "Orbital.Period..yr.", "Minimum.Orbit.Intersection.Distance..AU.",  "Asteroid.Magnitude"
                                      )]
 factor_covariates = asteroids_data[,c("Orbital.Reference", "Classification", "Epoch..TDB." )]
+
+all_covariates <- cbind(numeric_covariates, factor_covariates)
+
 rows = c("mean", "sd" , "var", "min", "max", "median") # "range", "quantile" )
 
 columns = c("Orbit.Axis..AU." , "Orbit.Eccentricity" , "Orbit.Inclination..deg." , "Perihelion.Argument..deg.",
@@ -69,6 +72,18 @@ stats
 stats[columns[1]]['mean']
 
 
+## calculate 4-quantiles for each covariate
+
+#calculate quartiles
+
+sapply(numeric_covariates, function(x) quantile(x, probs = seq(0, 1, 1/4)))
+
+
+#calculate range for each covariate
+
+sapply(numeric_covariates, function(x) range(x))
+
+
 #### make boxplot of each covariate
 
 
@@ -77,42 +92,49 @@ plot_name <- paste("IMG_asteroids_barplot_", "numeric_covariates" ,".png", sep =
 
 x = numeric_covariates 
 
-par(mfrow = c (2,2))
 
 png(plot_name)
+par(mfrow = c (1,4))
 
 for (i in 1:4) {
   
-  boxplot(x[,i], main=names(x)[i]) 
+  boxplot(x[,i], main=names(x)[i], col='red') 
   
 }
+
 dev.off()
+
 
 
 plot_name <- paste("IMG_asteroids_barplot_", "numeric_covariates2" ,".png", sep = "")
 
 
 x = numeric_covariates 
-
-par(mfrow = c (2,2))
-
 png(plot_name)
-for (i in 4:8) {
+
+par(mfrow = c (1,4))
+
+for (i in 1:8) {
   
-  boxplot(x[,i], main=names(x)[i]) 
+  boxplot(x[,i], main=names(x)[i], col = 'red') 
   
 }
+
+
 dev.off()
+
+
 
 plot_name <- paste("IMG_asteroids_barplot_", "numeric_covariates3" ,".png", sep = "")
 
+png(plot_name)
+
 par(mfrow = c (1,3))
 
-png(plot_name)
 
 for (i in 9:11) {
   
-  boxplot(x[,i], main=names(x)[i]) 
+  boxplot(x[,i], main=names(x)[i],  col = 'red') 
   
 }
 
@@ -126,12 +148,13 @@ x = factor_covariates
 plot_name <- paste("IMG_asteroids_barplot_", "factor_covariates" ,".png", sep = "")
 
 png(plot_name)
-
 par(mfrow = c (1,3))
+
+
 
 for (i in 1:3) {
   
-  boxplot(x[,i], main=names(x)[i]) 
+  boxplot(x[,i], main=names(x)[i],  col = 'red') 
   
 }
 
@@ -146,12 +169,15 @@ plot_name <- paste("IMG_asteroids_histogram_", "numeric_covariates" ,".png", sep
 
 png(plot_name)
 
-
 par(mfrow = c (2,2))
+
+
+
+
 
 for (i in 1:4) {
   
-  hist(x[,i], main=names(x)[i]) 
+  hist(x[,i], main=names(x)[i],  col = 'blue') 
   
 }
 
@@ -166,7 +192,7 @@ par(mfrow = c (2,2))
 
 for (i in 5:8) {
   
-  hist(x[,i], main=names(x)[i]) 
+  hist(x[,i], main=names(x)[i] , col = 'blue') 
   
 }
 
@@ -174,21 +200,38 @@ dev.off()
 
 plot_name <- paste("IMG_asteroids_histogram_", "numeric_covariates3" ,".png", sep = "")
 
+png(plot_name)
+
 par(mfrow = c (1,3))
 
 for (i in 9:11) {
   
-  hist(x[,i], main=names(x)[i]) 
+  hist(x[,i], main=names(x)[i]  , col = 'blue') 
   
 }
 
 dev.off()
 
 
+#### correlation matrix
+
+
+
+
 library(caret)
 
 #### multivariate plots
 par(mfrow = c (1,1))
+x = numeric_covariates[, 1]
+y = asteroids_data$Classification
+featurePlot(x,y)
+featurePlot(x,y, plot = 'density', scales=list(x=list(relation='free'), y= list(relation='free')), auto.key=list(columns=3))
+
+par(mfrow = c (1,1))
+ggplot(asteroids_data, aes(x = columns[1], 
+                           y = columns[2] )) +
+                          geom_point()
+
 
 plot(x=asteroids_data$Node.Longitude..deg. , y=asteroids_data$Minimum.Orbit.Intersection.Distance..AU., col=asteroids_data$Hazardous)
 plot(x=asteroids_data$Mean.Anomoly..deg., y=asteroids_data$Eccentricity, col=asteroids_data$Hazardous)
@@ -200,14 +243,68 @@ library(ggExtra)
 
 
 # Save the scatter plot in a variable
-p <- ggplot(asteroids_data, aes(x = Eccentricity , y = Mean.Motion)) +
+p <- ggplot(asteroids_data, aes(x = Orbital.Period..yr. , y = Mean.Anomoly..deg.)) +
   geom_point()
 p
 # Plot the scatter plot with marginal histograms
 ggMarginal(p, type = "histogram")
 
 ggplot(asteroids_data, aes(Perihelion.Argument..deg.)) + geom_density(aes(fill=factor(Hazardous), alpha=0.75))
-ggplot(asteroids_data, aes(x=Orbital.Period..yr., y=Hazardous )) + geom_point(alpha=0.7)
+ggplot(asteroids_data, aes(x=Orbital.Period..yr., y=Classification )) + geom_point(alpha=0.7)
+
+
+## correlation matrix
+
+
+install.packages("corrplot")
+library(corrplot)
+
+numeric_covariates.cor = cor(numeric_covariates, method = c("spearman"))
+all_covariates.cor = cor(all_covariates, method = c("spearman"))
+
+corrplot(numeric_covariates.cor)
+
+
+plot_name <- paste("IMG_asteroids_correlation_", "numeric_covariates" ,".png", sep = "")
+
+png(plot_name)
+
+par(mfrow = c (1,1))
+
+corrplot(numeric_covariates.cor)
+
+dev.off()
+
+
+palette = colorRampPalette(c("green", "white", "red")) (20)
+heatmap(x = mydata.cor, col = palette, symm = TRUE)
+
+
+install.packages('ggcorrplot')
+library('ggcorrplot')
+
+
+ggcorrplot(cor(numeric_covariates))
+
+plot_name <- paste("IMG_asteroids_correlation_", "numeric_covariates_ggplot_spearman" ,".png", sep = "")
+
+png(plot_name)
+
+ggcorrplot(cor(numeric_covariates , method = c('spearman')))
+
+dev.off()
+
+# p-values and rcorr
+
+library("Hmisc")
+
+numeric_covariates.rcorr = rcorr(as.matrix(numeric_covariates))
+numeric_covariates.rcorr
+
+
+numeric_covariates.coeff = numeric_covariates.rcorr$r
+numeric_covariates.p = numeric_covariates.rcorr$P
+
 
 
 ### best variable up - Jupiter Tisserand - mean Motion  Miss dist lunar
