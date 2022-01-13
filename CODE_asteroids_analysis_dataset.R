@@ -1,4 +1,4 @@
-setwd("C:/Users/Gasatoz/Github/AsteroidsClassification")
+setwd("~/Github/AsteroidsClassification")
 #load dataset RObject as asteroids_data
 load("DATA_asteroids_dataset.RData")
 
