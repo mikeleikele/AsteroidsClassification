@@ -5,7 +5,6 @@ library(gridExtra)
 library(neuralnet)
 library(caret)
 library(tidyverse)
-
 #t-distribution
 confidence_interval <- function(vector, interval) {
   # Standard deviation of sample
@@ -27,7 +26,8 @@ load("DATA_asteroids_dataset_split_0.7.RData")
 
 asteroids_split$train$Hazardous.int = as.factor(asteroids_split$train$Hazardous)
 
-#logistic binary or sigm
+#logistic binary or sigm, tanh
+#funz loss/obiettivo error quadr, cross entropy
 #multiclass relu
 network = neuralnet(Hazardous ~ Orbit.Axis..AU. + Orbit.Eccentricity + Orbit.Inclination..deg. + Perihelion.Argument..deg. + Node.Longitude..deg. + Mean.Anomoly..deg. + Perihelion.Distance..AU. + Aphelion.Distance..AU. + Orbital.Period..yr. + Minimum.Orbit.Intersection.Distance..AU. + Asteroid.Magnitude,
                     asteroids_split$train[1:500,], hidden=7,
