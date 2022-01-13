@@ -177,7 +177,7 @@ par(mfrow = c (2,2))
 
 for (i in 1:4) {
   
-  hist(x[,i], main=names(x)[i],  col = 'blue') 
+  hist(x[,i], main=names(x)[i] ) 
   
 }
 
@@ -192,7 +192,7 @@ par(mfrow = c (2,2))
 
 for (i in 5:8) {
   
-  hist(x[,i], main=names(x)[i] , col = 'blue') 
+  hist(x[,i], main=names(x)[i] ) 
   
 }
 
@@ -206,7 +206,7 @@ par(mfrow = c (1,3))
 
 for (i in 9:11) {
   
-  hist(x[,i], main=names(x)[i]  , col = 'blue') 
+  hist(x[,i], main=names(x)[i]  ) 
   
 }
 
@@ -215,7 +215,19 @@ dev.off()
 
 #### correlation matrix
 
+# change fill and outline color manually 
+ggplot(asteroids_data, aes(x =Minimum.Orbit.Intersection.Distance..AU. )) +
+  geom_histogram(aes(color = Hazardous, fill = Hazardous), 
+                 position = "identity", bins = 30, alpha = 0.4) +
+  scale_color_manual(values = c("#00AFBB", "#E7B800")) +
+  scale_fill_manual(values = c("#00AFBB", "#E7B800"))
 
+# change fill and outline color manually 
+ggplot(asteroids_data, aes(x =Orbit.Axis..AU. )) +
+  geom_histogram(aes(color = Hazardous, fill = Hazardous), 
+                 position = "identity", bins = 30, alpha = 0.4) +
+  scale_color_manual(values = c("#00AFBB", "#E7B800")) +
+  scale_fill_manual(values = c("#00AFBB", "#E7B800"))
 
 
 library(caret)
@@ -243,16 +255,67 @@ library(ggExtra)
 
 
 # Save the scatter plot in a variable
-p <- ggplot(asteroids_data, aes(x = Orbital.Period..yr. , y = Mean.Anomoly..deg.)) +
+ggplot(asteroids_data, aes(x = Orbital.Period..yr. , y = Mean.Anomoly..deg., color=Hazardous) ) +
   geom_point()
-p
+
+ggplot(asteroids_data, aes(x = Orbital.Period..yr. , y = Orbit.Eccentricity, color=Classification) ) +
+  geom_point()
+
+
+
+plot_name <- paste("IMG_asteroids_multivariate_scatter", "period_eccentricity" ,".png", sep = "")
+
+png(plot_name)
+
+
+ggplot(asteroids_data, aes(y = Orbital.Period..yr. , x = Orbit.Eccentricity, color=Classification) ) +
+  geom_point()
+
+dev.off()
+
+library(ggplot2)
+
+
+
+
+ggplot(asteroids_data, aes(x = Orbital.Period..yr. , y = Orbit.Eccentricity, color=Hazardous) ) +
+  geom_point()
+
+ggplot(asteroids_data, aes(x =Asteroid.Magnitude , y = Orbit.Inclination..deg., color=Hazardous) ) +
+  geom_point()
+
+ggplot(asteroids_data, aes(x = Minimum.Orbit.Intersection.Distance..AU. , y = Orbit.Eccentricity, color=Hazardous) ) +
+  geom_point()
+
+plot_name <- paste("IMG_asteroids_multivariate_scatter_", "magintude_orbitintersection" ,".png", sep = "")
+
+png(plot_name)
+
+
+ggplot(asteroids_data, aes(x = Minimum.Orbit.Intersection.Distance..AU. , y = Asteroid.Magnitude, color=Hazardous) ) +
+  geom_point()
+
+
+
+dev.off()
+
+
+ggplot(asteroids_data , aes(x = Asteroid.Magnitude , y = Mean.Anomoly..deg.,  color=Hazardous))
+
+
+
 # Plot the scatter plot with marginal histograms
 ggMarginal(p, type = "histogram")
 
 ggplot(asteroids_data, aes(Perihelion.Argument..deg.)) + geom_density(aes(fill=factor(Hazardous), alpha=0.75))
 ggplot(asteroids_data, aes(x=Orbital.Period..yr., y=Classification )) + geom_point(alpha=0.7)
+ggplot(asteroids_data, aes(x=Orbital.Period..yr., y=Classification )) + geom_point(alpha=0.7)
 
 
+
+c("Orbit.Axis..AU." , "Orbit.Eccentricity" , "Orbit.Inclination..deg." , "Perihelion.Argument..deg.",
+  "Node.Longitude..deg." , "Mean.Anomoly..deg." , "Perihelion.Distance..AU." , "Aphelion.Distance..AU.",
+  "Orbital.Period..yr.", "Minimum.Orbit.Intersection.Distance..AU.",  "Asteroid.Magnitude")
 ## correlation matrix
 
 
