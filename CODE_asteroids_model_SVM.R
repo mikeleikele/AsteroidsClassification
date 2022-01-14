@@ -165,8 +165,7 @@ for (j in 1:length(kernel_list)) {
       svm.Hazardous.stats.roc.pred.prob = rbind(svm.Hazardous.stats.roc.pred.prob,ROCFun.pred.prob )
       svm.Hazardous.stats.roc.thruth = append(svm.Hazardous.stats.roc.thruth, as.factor(fold.valid$Hazardous))
       
-      rm(svm.Hazardous.model, svm.Hazardous.pred)
-      rm(svm.Hazardous.confusion_matrix_true,svm.Hazardous.confusion_matrix_false,prec_true,recal_true,f1_true,prec_false,recal_false,f1_false,MacroPrecision,MacroRecall,MacroF1)
+      
     }
     svm.Hazardous.roc = ROCFunction.BIN(svm.Hazardous.stats.roc.pred.prob,svm.Hazardous.stats.roc.thruth,"TRUE")
     
