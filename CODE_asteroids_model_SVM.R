@@ -8,6 +8,15 @@ library(tidyverse)
 library(ROCR)
 library(gdata)
 
+Confusion_Sum <- function(cm_global, data, reference){
+  cm_fold <- table(reference, data)
+  if (is.null(cm_global)){
+    cm_global <- cm_fold
+  }else{
+    cm_global <- cm_global + cm_fold
+  }
+  return(cm_global)
+}
 #t-distribution
 confidence_interval <- function(vector, interval) {
   # Standard deviation of sample
@@ -78,7 +87,7 @@ asteroids_split$train$Hazardous.int = as.integer(asteroids_split$train$Hazardous
 
 folds.number = 5
 kernel_list <- c('linear','polynomial','radial')
-C_list <-c(0.5,1,10)
+C_list <-c(1,10)
 
 folds <- split(asteroids_split$train, cut(sample(1:nrow(asteroids_split$train)), folds.number))
 rm(folds.number)
@@ -113,7 +122,7 @@ for (j in 1:length(kernel_list)) {
     
     svm.Hazardous.stats.roc.pred.prob <- list()
     svm.Hazardous.stats.roc.thruth <- list()
-    
+    folds_confusion <- NULL
     for (i in 1:length(folds)) {
       fold.valid <- ldply(folds[i], data.frame)
       fold.valid <- fold.valid[, !names(fold.valid) %in% c(".id")]
@@ -128,10 +137,12 @@ for (j in 1:length(kernel_list)) {
       
       
       svm.Hazardous.confusion_matrix_true = confusionMatrix(
-        as.factor(svm.Hazardous.pred), as.factor(fold.valid$Hazardous), positive="TRUE", mode = "prec_recall") 
+        data=as.factor(svm.Hazardous.pred), reference=as.factor(fold.valid$Hazardous), positive="TRUE", mode = "prec_recall") 
       
       svm.Hazardous.confusion_matrix_false = confusionMatrix(
-        as.factor(svm.Hazardous.pred), as.factor(fold.valid$Hazardous), positive="FALSE", mode = "prec_recall") 
+        data=as.factor(svm.Hazardous.pred), reference=as.factor(fold.valid$Hazardous), positive="FALSE", mode = "prec_recall") 
+      
+      folds_confusion <- Confusion_Sum(folds_confusion, reference=fold.valid$Hazardous, data=as.factor(svm.Hazardous.pred))
       
       sens_true = svm.Hazardous.confusion_matrix_true$byClass["Sensitivity"]
       spec_true = svm.Hazardous.confusion_matrix_true$byClass["Specificity"]
@@ -167,12 +178,20 @@ for (j in 1:length(kernel_list)) {
       
       
     }
+    
+    
     svm.Hazardous.roc = ROCFunction.BIN(svm.Hazardous.stats.roc.pred.prob,svm.Hazardous.stats.roc.thruth,"TRUE")
     
     #plot(svm.Hazardous.roc$x.value,svm.Hazardous.roc$y.value , main=paste("AUC:",(svm.Hazardous.roc$auc)))
 
     
     svm.name <- paste("Haz",hyper.kernel,as.character(hyper.cost),sep="_")
+    
+    img_name_plot <- paste("IMG_asteroids_model_SWM_", svm.name ,"_confusion" ,".png", sep = "")
+    png(img_name_plot)
+      grid.table(folds_confusion)
+      dev.off()
+    
     svm.Hazardous$Accuracy[svm.name] <- svm.Hazardous.stats$Accuracy
     svm.Hazardous$MacroSensitivity[svm.name] <- svm.Hazardous.stats$MacroSensitivity
     svm.Hazardous$MacroSpecificity[svm.name] <- svm.Hazardous.stats$MacroSpecificity
@@ -411,7 +430,7 @@ rm(hyper.cost,hyper.kernel,svm.Classification.Plot.Linear.C1)
 
 folds.number = 5
 kernel_list <- c('linear','polynomial','radial')
-C_list <- c(0.5,1,10)
+C_list <- c(1,10)
 
 folds <- split(asteroids_split$train, cut(sample(1:nrow(asteroids_split$train)), folds.number))
 rm(folds.number)
@@ -468,6 +487,8 @@ for (j in 1:length(kernel_list)) {
     
     svm.Classification.stats.roc.pred.prob <- list()
     svm.Classification.stats.roc.thruth <- list()
+    
+    folds_confusion <- NULL
 
     for (i in 1:length(folds)) {
       fold.valid <- ldply(folds[i], data.frame)
@@ -482,9 +503,9 @@ for (j in 1:length(kernel_list)) {
       svm.Classification.pred = predict(svm.Classification.model, fold.valid)
       
       svm.Classification.confusion_matrix_multiclass = confusionMatrix(
-        svm.Classification.pred, fold.valid$Classification, mode = "prec_recall") 
+        data=svm.Classification.pred, reference=fold.valid$Classification, mode = "prec_recall") 
 
-      
+      folds_confusion <- Confusion_Sum(folds_confusion, reference=fold.valid$Classification, data=svm.Classification.pred)
       
       confusion.multi = svm.Classification.confusion_matrix_multiclass$byClass
       
@@ -512,11 +533,11 @@ for (j in 1:length(kernel_list)) {
       recal_Aten = confusion.multi["Class: Aten Asteroid","Recall"]
       f1_Aten = confusion.multi["Class: Aten Asteroid","F1"]
       
-      MacroSensitivity = (0.25 * sens_Amor) + (0.25 * sens_Apohele) + (0.25 * sens_Apollo) + (0.25 * sens_Aten)
-      MacroSpecificity = (0.25 * spec_Amor) + (0.25 * spec_Apohele) + (0.25 * spec_Apollo) + (0.25 * spec_Aten)
-      MacroPrecision = (0.25 * prec_Amor) + (0.25 * prec_Apohele) + (0.25 * prec_Apollo) + (0.25 * prec_Aten)
-      MacroRecall = (0.25 * recal_Amor) + (0.25 * recal_Apohele) + (0.25 * recal_Apollo) + (0.25 * recal_Aten)
-      MacroF1 = (0.25 * f1_Amor) + (0.25 * f1_Apohele) + (0.25 * f1_Apollo) + (0.25 * prec_Aten)
+      MacroSensitivity = mean(c(sens_Amor, sens_Apohele, sens_Apollo, sens_Aten),  na.rm = TRUE)
+      MacroSpecificity = mean(c(spec_Amor, spec_Apohele, spec_Apollo, spec_Aten),  na.rm = TRUE)
+      MacroPrecision = mean(c(prec_Amor, prec_Apohele, prec_Apollo, prec_Aten),  na.rm = TRUE)
+      MacroRecall = mean(c(recal_Amor, recal_Apohele, recal_Apollo, recal_Aten),  na.rm = TRUE)
+      MacroF1 =  mean(c(f1_Amor,  f1_Apohele,  f1_Apollo,  f1_Aten),  na.rm = TRUE)
       
       svm.Classification.stats$Accuracy    = append(svm.Classification.stats$Accuracy, svm.Classification.confusion_matrix_multiclass$overall["Accuracy"])
       svm.Classification.stats$MacroSensitivity = append(svm.Classification.stats$MacroSensitivity, MacroSensitivity)
@@ -543,6 +564,12 @@ for (j in 1:length(kernel_list)) {
     svm.Classification.roc.Aten = ROCFunction.MULTI(svm.Classification.stats.roc.pred.prob,svm.Classification.stats.roc.thruth,"Aten Asteroid")
     
     svm.name <- paste("Clas",hyper.kernel,as.character(hyper.cost),sep="_")
+    
+    img_name_plot <- paste("IMG_asteroids_model_SWM_", svm.name ,"_confusion" ,".png", sep = "")
+      png(img_name_plot)
+      grid.table(folds_confusion)
+      dev.off()
+    
     svm.Classification$Accuracy[svm.name] <- svm.Classification.stats$Accuracy
     svm.Classification$MacroSensitivity[svm.name] <- svm.Classification.stats$MacroSensitivity
     svm.Classification$MacroSpecificity[svm.name] <- svm.Classification.stats$MacroSpecificity
@@ -606,31 +633,29 @@ for (j in 1:length(kernel_list)) {
     svm.Classification.All[tdist_name] <- c(tdist$acc,tdist$sens,tdist$spec,tdist$prec,tdist$rec,tdist$f1)
     
     
-    rdist <- list()
-    rdist_name <- paste("Class ",hyper.kernel,as.character(hyper.cost),sep=" ")  
     
+    rdist_name <- paste("Class ",hyper.kernel,as.character(hyper.cost),sep=" ")  
+    rdist <- list()
     rdist_val = svm.Classification.roc.Amor$auc
-    rdist$auc <- paste(as.character(round(rdist_val,8)))
+    rdist$Amor.auc <- paste(as.character(round(rdist_val,8)))
     rdist_val = svm.Classification.roc.Amor$optcut
-    rdist$cutoff <- paste(as.character(round(rdist_val,5)))
+    rdist$Amor.optcut <- paste(as.character(round(rdist_val,5)))
     
     rdist_val = svm.Classification.roc.Apohele$auc
-    rdist$auc <- paste(as.character(round(rdist_val,8)))
+    rdist$Apohele.auc <- paste(as.character(round(rdist_val,8)))
     rdist_val = svm.Classification.roc.Apohele$optcut
-    rdist$cutoff <- paste(as.character(round(rdist_val,5)))
+    rdist$Apohele.optcut <- paste(as.character(round(rdist_val,5)))
     
     rdist_val = svm.Classification.roc.Apollo$auc
-    rdist$auc <- paste(as.character(round(rdist_val,8)))
+    rdist$Apollo.auc <- paste(as.character(round(rdist_val,8)))
     rdist_val = svm.Classification.roc.Apollo$optcut
-    rdist$cutoff <- paste(as.character(round(rdist_val,5)))
+    rdist$Apollo.optcut <- paste(as.character(round(rdist_val,5)))
     
     rdist_val = svm.Classification.roc.Aten$auc
-    rdist$auc <- paste(as.character(round(rdist_val,8)))
+    rdist$Aten.auc <- paste(as.character(round(rdist_val,8)))
     rdist_val = svm.Classification.roc.Aten$optcut
-    rdist$cutoff <- paste(as.character(round(rdist_val,5)))
-    
-    svm.Classification.ROC.All[rdist_name] <- c(rdist$acc,rdist$sens,rdist$spec,rdist$prec,rdist$rec,rdist$f1,rdist$auc,rdist$cutoff)
-    rm(tdist_name,tdist,svm.name,fold.train, fold.valid)
+    rdist$Aten.optcut <- paste(as.character(round(rdist_val,5)))
+    svm.Classification.ROC.All[rdist_name] <- c(rdist$Amor.auc,rdist$Amor.optcut,rdist$Apohele.auc,rdist$Apohele.optcut,rdist$Apollo.auc,rdist$Apollo.optcut,rdist$Aten.auc,rdist$Aten.optcut)
     
   }
 }

@@ -26,6 +26,16 @@ confidence_interval <- function(vector, interval) {
   return(result)
 }
 
+Confusion_Sum <- function(cm_global, data, reference){
+  cm_fold <- table(reference, data)
+  if (is.null(cm_global)){
+    cm_global <- cm_fold
+  }else{
+    cm_global <- cm_global + cm_fold
+  }
+  return(cm_global)
+}
+
 ROCFunction.optcut = function(perf, pred){
   cut.ind = mapply(FUN=function(x, y, p){
     d = (x - 0)^2 + (y-1)^2
@@ -120,7 +130,7 @@ rnn.Hazardous.All <- data.frame(mx)
 rnn.Hazardous.All["Performance"] = c("Accuracy","MacroSensitivity","MacroSpecificity","MacroPrecision","MacroRecall","MacroF1","AUC","OptimalCutOff")
 rm(mx)
 
-
+rnn.Hazardous.model <- NULL
 for (hl in 1:length(hiddenLayers_list)) {
   for (ac in 1:length(actFun_list)) {
     for (lrr in 1:length(learningRate_list)) {
@@ -139,6 +149,8 @@ for (hl in 1:length(hiddenLayers_list)) {
         rnn.Hazardous.stats.roc.pred.prob <- list()
         rnn.Hazardous.stats.roc.thruth <- list()
         
+        folds_confusion <- NULL
+        
         print(rnn.model_printname)        
         for (i in 1:length(folds)) {
           fold.valid <- ldply(folds[i], data.frame)
@@ -156,6 +168,8 @@ for (hl in 1:length(hiddenLayers_list)) {
                               linear.output = FALSE)
           
           rnn.Hazardous.pred = predict(rnn.Hazardous.model, fold.valid)[, 1] > 0.5
+          
+          folds_confusion <- Confusion_Sum(folds_confusion, reference=as.factor(fold.valid$Hazardous), data=as.factor(rnn.Hazardous.pred))
           
           rnn.Hazardous.confusion_matrix_true = confusionMatrix(
             data=as.factor(rnn.Hazardous.pred), reference=as.factor(fold.valid$Hazardous), positive="TRUE", mode = "prec_recall") 
@@ -194,6 +208,12 @@ for (hl in 1:length(hiddenLayers_list)) {
         }
         
         #end kfold
+        
+        img_name_plot <- paste("IMG_asteroids_model_RNN_", rnn.name ,"_confusion" ,".png", sep = "")
+          png(img_name_plot)
+          grid.table(folds_confusion)
+          dev.off()
+        
         rnn.Hazardous.roc = ROCFunction.BIN(rnn.Hazardous.stats.roc.pred.prob,rnn.Hazardous.stats.roc.thruth)
         
         rnn.Hazardous$Accuracy[rnn.name] <- rnn.Hazardous.stats$Accuracy
@@ -214,22 +234,22 @@ for (hl in 1:length(hiddenLayers_list)) {
         tdist_name <-  paste("Hazardous",actFun_name,loss_name,"(", paste(hiddenL_val, collapse = "+"),")",as.character(lr_val),sep=" ")
         
         tdist_val = confidence_interval(as.vector(rnn.Hazardous.stats$Accuracy),0.95)
-        tdist$acc <- paste(as.character(round(tdist_val[2],4))," ± ",as.character(round(tdist_val[1],4)))
+        tdist$acc <- paste(as.character(round(tdist_val[2],4))," ï¿½ ",as.character(round(tdist_val[1],4)))
         
         tdist_val = confidence_interval(as.vector(rnn.Hazardous.stats$MacroSensitivity),0.95)
-        tdist$sens <- paste(as.character(round(tdist_val[2],4))," ± ",as.character(round(tdist_val[1],4)))
+        tdist$sens <- paste(as.character(round(tdist_val[2],4))," ï¿½ ",as.character(round(tdist_val[1],4)))
         
         tdist_val = confidence_interval(as.vector(rnn.Hazardous.stats$MacroSpecificity),0.95)
-        tdist$spec <- paste(as.character(round(tdist_val[2],4))," ± ",as.character(round(tdist_val[1],4)))
+        tdist$spec <- paste(as.character(round(tdist_val[2],4))," ï¿½ ",as.character(round(tdist_val[1],4)))
         
         tdist_val = confidence_interval(as.vector(rnn.Hazardous.stats$MacroPrecision),0.95)
-        tdist$prec <- paste(as.character(round(tdist_val[2],4))," ± ",as.character(round(tdist_val[1],4)))
+        tdist$prec <- paste(as.character(round(tdist_val[2],4))," ï¿½ ",as.character(round(tdist_val[1],4)))
         
         tdist_val = confidence_interval(as.vector(rnn.Hazardous.stats$MacroRecall),0.95)
-        tdist$rec <- paste(as.character(round(tdist_val[2],4))," ± ",as.character(round(tdist_val[1],4)))
+        tdist$rec <- paste(as.character(round(tdist_val[2],4))," ï¿½ ",as.character(round(tdist_val[1],4)))
         
         tdist_val = confidence_interval(as.vector(rnn.Hazardous.stats$MacroF1),0.95)
-        tdist$f1 <- paste(as.character(round(tdist_val[2],4))," ± ",as.character(round(tdist_val[1],4)))
+        tdist$f1 <- paste(as.character(round(tdist_val[2],4))," ï¿½ ",as.character(round(tdist_val[1],4)))
         
         
         tdist_val = rnn.Hazardous.roc$auc
@@ -243,7 +263,7 @@ for (hl in 1:length(hiddenLayers_list)) {
     }
   }
   img_name_plot <- paste("IMG_asteroids_model_RNN_", "Hazardous_HIDDEN_LAYER_",paste(hiddenL_val, collapse = "+") ,".png", sep = "")
-  png(img_name_plot, res = 800, height = 10, width = 15, unit='in'))
+  png(img_name_plot, res = 800, height = 10, width = 15, unit='in')
   plot.nnet(rnn.Hazardous.model)
     dev.off()
 }
@@ -407,6 +427,8 @@ for (hl in 1:length(hiddenLayers_list)) {
         rnn.Classification.stats.roc.pred.prob <- list()
         rnn.Classification.stats.roc.thruth <- list()
         
+        folds_confusion <- NULL
+        
         for (i in 1:length(folds)) {
           fold.valid <- ldply(folds[i], data.frame)
           fold.valid <- fold.valid[, !names(fold.valid) %in% c(".id")]
@@ -426,8 +448,10 @@ for (hl in 1:length(hiddenLayers_list)) {
           rnn.Classification.pred = predict(rnn.Classification.model, fold.valid)
           rnn.Classification.pred.max = as.factor(c("Amor Asteroid", "Apohele Asteroid", "Apollo Asteroid", "Aten Asteroid")[apply(rnn.Classification.pred, 1, which.max)])
           
+          folds_confusion <- Confusion_Sum(folds_confusion, reference=fold.valid$Classification, data=rnn.Classification.pred.max)
+          
           rnn.Classification.confusion_matrix_multiclass = confusionMatrix(
-            rnn.Classification.pred.max, fold.valid$Classification, mode = "prec_recall") 
+            data=rnn.Classification.pred.max, reference=fold.valid$Classification, mode = "prec_recall") 
           
           confusion.multi = rnn.Classification.confusion_matrix_multiclass$byClass
           
@@ -455,11 +479,11 @@ for (hl in 1:length(hiddenLayers_list)) {
           recal_Aten = confusion.multi["Class: Aten Asteroid","Recall"]
           f1_Aten = confusion.multi["Class: Aten Asteroid","F1"]
           
-          MacroSensitivity = (0.25 * sens_Amor) + (0.25 * sens_Apohele) + (0.25 * sens_Apollo) + (0.25 * sens_Aten)
-          MacroSpecificity = (0.25 * spec_Amor) + (0.25 * spec_Apohele) + (0.25 * spec_Apollo) + (0.25 * spec_Aten)
-          MacroPrecision = (0.25 * prec_Amor) + (0.25 * prec_Apohele) + (0.25 * prec_Apollo) + (0.25 * prec_Aten)
-          MacroRecall = (0.25 * recal_Amor) + (0.25 * recal_Apohele) + (0.25 * recal_Apollo) + (0.25 * recal_Aten)
-          MacroF1 = (0.25 * f1_Amor) + (0.25 * f1_Apohele) + (0.25 * f1_Apollo) + (0.25 * prec_Aten)
+          MacroSensitivity = mean(c(sens_Amor,sens_Apohele,sens_Apollo,sens_Aten), na.rm = TRUE)
+          MacroSpecificity = mean(c(spec_Amor,spec_Apohele,spec_Apollo,spec_Aten), na.rm = TRUE)
+          MacroPrecision = mean(c(prec_Amor,prec_Apohele,prec_Apollo,prec_Aten), na.rm = TRUE)
+          MacroRecall = mean(c(recal_Amor,recal_Apohele,recal_Apollo,recal_Aten), na.rm = TRUE)
+          MacroF1 =  mean(c(f1_Amor,f1_Apohele,f1_Apollo,f1_Aten), na.rm = TRUE)
           
           rnn.Classification.stats$Accuracy    = append(rnn.Classification.stats$Accuracy, rnn.Classification.confusion_matrix_multiclass$overall["Accuracy"])
           rnn.Classification.stats$MacroSensitivity = append(rnn.Classification.stats$MacroSensitivity, MacroSensitivity)
@@ -474,6 +498,11 @@ for (hl in 1:length(hiddenLayers_list)) {
         }
         
         #end kfold
+        img_name_plot <- paste("IMG_asteroids_model_SWM_", rnn.name ,"_confusion" ,".png", sep = "")
+          png(img_name_plot)
+          grid.table(folds_confusion)
+          dev.off()
+        
         
         colnames(rnn.Classification.stats.roc.pred.prob) <- c("Amor Asteroid","Apohele Asteroid","Apollo Asteroid","Aten Asteroid")
         rnn.Classification.roc.Amor = ROCFunction.MULTI(rnn.Classification.stats.roc.pred.prob,rnn.Classification.stats.roc.thruth,"Amor Asteroid")
@@ -523,49 +552,51 @@ for (hl in 1:length(hiddenLayers_list)) {
         tdist_name <-  paste("Class ",actFun_name,loss_name,"(", paste(hiddenL_val, collapse = "+"),")",as.character(lr_val),sep=" ")
         
         tdist_val = confidence_interval(as.vector(rnn.Classification.stats$Accuracy),0.95)
-        tdist$acc <- paste(as.character(round(tdist_val[2],4))," ± ",as.character(round(tdist_val[1],4)))
+        tdist$acc <- paste(as.character(round(tdist_val[2],4))," ï¿½ ",as.character(round(tdist_val[1],4)))
         
         tdist_val = confidence_interval(as.vector(rnn.Classification.stats$MacroSensitivity),0.95)
-        tdist$sens <- paste(as.character(round(tdist_val[2],4))," ± ",as.character(round(tdist_val[1],4)))
+        tdist$sens <- paste(as.character(round(tdist_val[2],4))," ï¿½ ",as.character(round(tdist_val[1],4)))
         
         tdist_val = confidence_interval(as.vector(rnn.Classification.stats$MacroSpecificity),0.95)
-        tdist$spec <- paste(as.character(round(tdist_val[2],4))," ± ",as.character(round(tdist_val[1],4)))
+        tdist$spec <- paste(as.character(round(tdist_val[2],4))," ï¿½ ",as.character(round(tdist_val[1],4)))
         
         tdist_val = confidence_interval(as.vector(rnn.Classification.stats$MacroPrecision),0.95)
-        tdist$prec <- paste(as.character(round(tdist_val[2],4))," ± ",as.character(round(tdist_val[1],4)))
+        tdist$prec <- paste(as.character(round(tdist_val[2],4))," ï¿½ ",as.character(round(tdist_val[1],4)))
         
         tdist_val = confidence_interval(as.vector(rnn.Classification.stats$MacroRecall),0.95)
-        tdist$rec <- paste(as.character(round(tdist_val[2],4))," ± ",as.character(round(tdist_val[1],4)))
+        tdist$rec <- paste(as.character(round(tdist_val[2],4))," ï¿½ ",as.character(round(tdist_val[1],4)))
         
         tdist_val = confidence_interval(as.vector(rnn.Classification.stats$MacroF1),0.95)
-        tdist$f1 <- paste(as.character(round(tdist_val[2],4))," ± ",as.character(round(tdist_val[1],4)))
+        tdist$f1 <- paste(as.character(round(tdist_val[2],4))," ï¿½ ",as.character(round(tdist_val[1],4)))
         
         rnn.Classification.All[tdist_name] <- c(tdist$acc,tdist$sens,tdist$spec,tdist$prec,tdist$rec,tdist$f1)
         
-        rdist <- list()
+        
         rdist_name <-  paste("Class ",actFun_name,loss_name,"(", paste(hiddenL_val, collapse = "+"),")",as.character(lr_val),sep=" ")
         
+        rdist <- list()
         rdist_val = rnn.Classification.roc.Amor$auc
-        rdist$auc <- paste(as.character(round(rdist_val,8)))
+        rdist$Amor.auc <- paste(as.character(round(rdist_val,8)))
         rdist_val = rnn.Classification.roc.Amor$optcut
-        rdist$cutoff <- paste(as.character(round(rdist_val,5)))
+        rdist$Amor.optcut <- paste(as.character(round(rdist_val,5)))
         
         rdist_val = rnn.Classification.roc.Apohele$auc
-        rdist$auc <- paste(as.character(round(rdist_val,8)))
+        rdist$Apohele.auc <- paste(as.character(round(rdist_val,8)))
         rdist_val = rnn.Classification.roc.Apohele$optcut
-        rdist$cutoff <- paste(as.character(round(rdist_val,5)))
+        rdist$Apohele.optcut <- paste(as.character(round(rdist_val,5)))
         
         rdist_val = rnn.Classification.roc.Apollo$auc
-        rdist$auc <- paste(as.character(round(rdist_val,8)))
+        rdist$Apollo.auc <- paste(as.character(round(rdist_val,8)))
         rdist_val = rnn.Classification.roc.Apollo$optcut
-        rdist$cutoff <- paste(as.character(round(rdist_val,5)))
+        rdist$Apollo.optcut <- paste(as.character(round(rdist_val,5)))
         
         rdist_val = rnn.Classification.roc.Aten$auc
-        rdist$auc <- paste(as.character(round(rdist_val,8)))
+        rdist$Aten.auc <- paste(as.character(round(rdist_val,8)))
         rdist_val = rnn.Classification.roc.Aten$optcut
-        rdist$cutoff <- paste(as.character(round(rdist_val,5)))
+        rdist$Aten.optcut <- paste(as.character(round(rdist_val,5)))
+        rnn.Classification.ROC.All[rdist_name] <- c(rdist$Amor.auc,rdist$Amor.optcut,rdist$Apohele.auc,rdist$Apohele.optcut,rdist$Apollo.auc,rdist$Apollo.optcut,rdist$Aten.auc,rdist$Aten.optcut)
         
-        rnn.Classification.ROC.All[rdist_name] <- c(rdist$acc,rdist$sens,rdist$spec,rdist$prec,rdist$rec,rdist$f1,rdist$auc,rdist$cutoff)
+        
       }
     }
   }

@@ -141,9 +141,9 @@ for (i in 1:length(folds)) {
   decisionTree.Hazardous.GINI.prediction <- predict(decisionTree.Hazardous.GINI, fold.valid, type = "class")
 
   decisionTree.Hazardous.GINI.confusion_matrix_true = confusionMatrix(
-    decisionTree.Hazardous.GINI.prediction, fold.valid$Hazardous.int, positive="TRUE", mode = "prec_recall") 
+    data=decisionTree.Hazardous.GINI.prediction, reference=fold.valid$Hazardous.int, positive="TRUE", mode = "prec_recall") 
   decisionTree.Hazardous.GINI.confusion_matrix_false = confusionMatrix(
-    decisionTree.Hazardous.GINI.prediction, fold.valid$Hazardous.int, positive="FALSE", mode = "prec_recall") 
+    data=decisionTree.Hazardous.GINI.prediction, reference=fold.valid$Hazardous.int, positive="FALSE", mode = "prec_recall") 
   
   sens_GINI_true = decisionTree.Hazardous.GINI.confusion_matrix_true$byClass["Sensitivity"]
   spec_GINI_true= decisionTree.Hazardous.GINI.confusion_matrix_true$byClass["Specificity"]
@@ -180,15 +180,15 @@ for (i in 1:length(folds)) {
    
    ROC_true = ROCFunction.BIN(ROCFun.pred.prob,as.factor(fold.valid$Hazardous),"TRUE")
    
-   dt.Hazardous.GINI.foldstats$auc = append(dt.Hazardous.GINI.foldstats$auc,ROC_true)
+   dt.Hazardous.GINI.foldstats$auc = append(dt.Hazardous.GINI.foldstats$auc,ROC_true$auc)
    
    #IGHE
    decisionTree.Hazardous.IGHE.prediction <- predict(decisionTree.Hazardous.IGHE, fold.valid, type = "class")
    
    decisionTree.Hazardous.IGHE.confusion_matrix_true = confusionMatrix(
-     decisionTree.Hazardous.IGHE.prediction, fold.valid$Hazardous.int, positive="TRUE", mode = "prec_recall") 
+     data=decisionTree.Hazardous.IGHE.prediction, reference=fold.valid$Hazardous.int, positive="TRUE", mode = "prec_recall") 
    decisionTree.Hazardous.IGHE.confusion_matrix_false = confusionMatrix(
-     decisionTree.Hazardous.IGHE.prediction, fold.valid$Hazardous.int, positive="FALSE", mode = "prec_recall") 
+     data=decisionTree.Hazardous.IGHE.prediction, reference=fold.valid$Hazardous.int, positive="FALSE", mode = "prec_recall") 
    
    sens_IGHE_true = decisionTree.Hazardous.IGHE.confusion_matrix_true$byClass["Sensitivity"]
    spec_IGHE_true= decisionTree.Hazardous.IGHE.confusion_matrix_true$byClass["Specificity"]
@@ -236,7 +236,7 @@ for (i in 1:length(folds)) {
    
    ROC_true = ROCFunction.BIN(ROCFun.pred.prob,as.factor(fold.valid$Hazardous),"TRUE")
    
-   dt.Hazardous.IGHE.foldstats$auc = append(dt.Hazardous.IGHE.foldstats$auc,ROC_true)
+   dt.Hazardous.IGHE.foldstats$auc = append(dt.Hazardous.IGHE.foldstats$auc,ROC_true$auc)
   
   decisionTree.Hazardous.GINI.confusion_matrix = table(fold.valid$Hazardous, decisionTree.Hazardous.GINI.prediction)
   decisionTree.Hazardous.IGHE.confusion_matrix = table(fold.valid$Hazardous, decisionTree.Hazardous.IGHE.prediction)
@@ -264,7 +264,7 @@ dt.Hazardous$MacroSpecificity[dt.GINI.name] <- dt.Hazardous.GINI.foldstats$Macro
 dt.Hazardous$MacroPrecision[dt.GINI.name] <- dt.Hazardous.GINI.foldstats$MacroPrecision
 dt.Hazardous$MacroRecall[dt.GINI.name] <- dt.Hazardous.GINI.foldstats$MacroRecall
 dt.Hazardous$MacroF1[dt.GINI.name] <- dt.Hazardous.GINI.foldstats$MacroF1
-dt.Hazardous$auc[dt.GINI.name] <- dt.Hazardous.GINI.foldstats$auc
+dt.Hazardous$auc[dt.GINI.name] <- dt.Hazardous.GINI.roc$auc
 dt.Hazardous$CutOffOpt[dt.GINI.name] <- dt.Hazardous.GINI.roc$optcut
 dt.Hazardous_ROC.name = c(dt.Hazardous_ROC.name, dt.GINI.name)
 dt.Hazardous_ROC.x <- cbindX(dt.Hazardous_ROC.x, data.frame(dt.Hazardous.GINI.roc$x.value))
@@ -453,10 +453,6 @@ png(img_name_plot)
   fancyRpartPlot(decisionTree.Hazardous.GINI)
   dev.off()
 
-rm(folds.stats.namesplit, folds.stats.Hazardous.trainsplit, folds.stats.Hazardous.validsplit, decisionTree.Hazardous.GINI.stats, decisionTree.Hazardous.IGHE.stats)
-rm(decisionTree.Hazardous.GINI, decisionTree.Hazardous.IGHE)
-rm(decisionTree.Hazardous.GINI.prediction, decisionTree.Hazardous.IGHE.prediction, decisionTree.Hazardous.GINI.confusion_matrix, decisionTree.Hazardous.IGHE.confusion_matrix)
-
 
 ## Classification Asteroids
 folds.stats.namesplit <- list()
@@ -560,9 +556,9 @@ for (i in 1:length(folds)) {
   decisionTree.Classification.IGHE.prediction <- predict(decisionTree.Classification.IGHE, fold.valid, type = "class")
   
   decisionTree.Classification.GINI.confusion_matrix_multiclass = confusionMatrix(
-    decisionTree.Classification.GINI.prediction, fold.valid$Classification, mode = "prec_recall") 
+    data=decisionTree.Classification.GINI.prediction, reference=fold.valid$Classification, mode = "prec_recall") 
   decisionTree.Classification.IGHE.confusion_matrix_multiclass = confusionMatrix(
-    decisionTree.Classification.IGHE.prediction, fold.valid$Classification, mode = "prec_recall") 
+    data=decisionTree.Classification.IGHE.prediction, reference=fold.valid$Classification, mode = "prec_recall") 
   
   confusion.multi.GINI = decisionTree.Classification.GINI.confusion_matrix_multiclass$byClass
   confusion.multi.IGHE = decisionTree.Classification.IGHE.confusion_matrix_multiclass$byClass
@@ -618,18 +614,18 @@ for (i in 1:length(folds)) {
   f1_Aten.IGHE = confusion.multi.IGHE["Class: Aten Asteroid","F1"]
   
   #GINI MACROs
-  MacroSensitivity.GINI = (0.25 * sens_Amor.GINI) + (0.25 * sens_Apohele.GINI) + (0.25 * sens_Apollo.GINI) + (0.25 * sens_Aten.GINI)
-  MacroSpecificity.GINI = (0.25 * spec_Amor.GINI) + (0.25 * spec_Apohele.GINI) + (0.25 * spec_Apollo.GINI) + (0.25 * spec_Aten.GINI)
-  MacroPrecision.GINI = (0.25 * prec_Amor.GINI) + (0.25 * prec_Apohele.GINI) + (0.25 * prec_Apollo.GINI) + (0.25 * prec_Aten.GINI)
-  MacroRecall.GINI = (0.25 * recal_Amor.GINI) + (0.25 * recal_Apohele.GINI) + (0.25 * recal_Apollo.GINI) + (0.25 * recal_Aten.GINI)
-  MacroF1.GINI = (0.25 * f1_Amor.GINI) + (0.25 * f1_Apohele.GINI) + (0.25 * f1_Apollo.GINI) + (0.25 * f1_Aten.GINI)
+  MacroSensitivity.GINI = mean(c(sens_Amor.GINI, sens_Apohele.GINI, sens_Apollo.GINI, sens_Aten.GINI),  na.rm = TRUE)
+  MacroSpecificity.GINI = mean(c(spec_Amor.GINI, spec_Apohele.GINI, spec_Apollo.GINI, spec_Aten.GINI),  na.rm = TRUE)
+  MacroPrecision.GINI = mean(c(prec_Amor.GINI, prec_Apohele.GINI, prec_Apollo.GINI, prec_Aten.GINI),  na.rm = TRUE)
+  MacroRecall.GINI = mean(c(recal_Amor.GINI, recal_Apohele.GINI, recal_Apollo.GINI, recal_Aten.GINI),  na.rm = TRUE)
+  MacroF1.GINI =  mean(c(f1_Amor.GINI,  f1_Apohele.GINI,  f1_Apollo.GINI,  f1_Aten.GINI),  na.rm = TRUE)
   
   #IGHE MACROs
-  MacroSensitivity.IGHE = (0.25 * sens_Amor.IGHE) + (0.25 * sens_Apohele.IGHE) + (0.25 * sens_Apollo.IGHE) + (0.25 * sens_Aten.IGHE)
-  MacroSpecificity.IGHE = (0.25 * spec_Amor.IGHE) + (0.25 * spec_Apohele.IGHE) + (0.25 * spec_Apollo.IGHE) + (0.25 * spec_Aten.IGHE)
-  MacroPrecision.IGHE = (0.25 * prec_Amor.IGHE) + (0.25 * prec_Apohele.IGHE) + (0.25 * prec_Apollo.IGHE) + (0.25 * prec_Aten.IGHE)
-  MacroRecall.IGHE = (0.25 * recal_Amor.IGHE) + (0.25 * recal_Apohele.IGHE) + (0.25 * recal_Apollo.IGHE) + (0.25 * recal_Aten.IGHE)
-  MacroF1.IGHE = (0.25 * f1_Amor.IGHE) + (0.25 * f1_Apohele.IGHE) + (0.25 * f1_Apollo.IGHE) + (0.25 * f1_Aten.IGHE)
+  MacroSensitivity.IGHE = mean(c(sens_Amor.IGHE, sens_Apohele.IGHE, sens_Apollo.IGHE, sens_Aten.IGHE),  na.rm = TRUE)
+  MacroSpecificity.IGHE = mean(c(spec_Amor.IGHE, spec_Apohele.IGHE, spec_Apollo.IGHE, spec_Aten.IGHE),  na.rm = TRUE)
+  MacroPrecision.IGHE = mean(c(prec_Amor.IGHE, prec_Apohele.IGHE, prec_Apollo.IGHE, prec_Aten.IGHE),  na.rm = TRUE)
+  MacroRecall.IGHE = mean(c(recal_Amor.IGHE, recal_Apohele.IGHE, recal_Apollo.IGHE, recal_Aten.IGHE),  na.rm = TRUE)
+  MacroF1.IGHE =  mean(c(f1_Amor.IGHE,  f1_Apohele.IGHE,  f1_Apollo.IGHE,  f1_Aten.IGHE),  na.rm = TRUE)
   
   dt.Classification.GINI.foldstats$Accuracy    = append(dt.Classification.GINI.foldstats$Accuracy, decisionTree.Classification.GINI.confusion_matrix_multiclass$overall["Accuracy"])
   dt.Classification.GINI.foldstats$MacroSensitivity = append(dt.Classification.GINI.foldstats$MacroSensitivity, MacroSensitivity.GINI)
@@ -661,7 +657,7 @@ for (i in 1:length(folds)) {
     decisionTree.Classification.IGHE.stats <- decisionTree.Classification.IGHE.stats + decisionTree.Classification.IGHE.confusion_matrix
   }
  
-  
+
   
   #ROC 
   #ROC GINI
@@ -742,30 +738,30 @@ tdist_val = confidence_interval(as.vector(dt.Classification.GINI.foldstats$Macro
   tdist$f1 <- paste(as.character(round(tdist_val[2],4))," ± ",as.character(round(tdist_val[1],4)))
 dt.Classification.All[dt.name] <- c(tdist$acc,tdist$sens,tdist$spec,tdist$prec,tdist$rec,tdist$f1)
 
-rdist <- list()
-rdist_name <- paste("Class ",hyper.kernel,as.character(hyper.cost),sep=" ")  
+rdist_name <- paste("DT Classification GINI")  
 
+rdist <- list()
 rdist_val = dt.Classification.roc.Amor$auc
-rdist$auc <- paste(as.character(round(rdist_val,8)))
+rdist$Amor.auc <- paste(as.character(round(rdist_val,8)))
 rdist_val = dt.Classification.roc.Amor$optcut
-rdist$cutoff <- paste(as.character(round(rdist_val,5)))
+rdist$Amor.optcut <- paste(as.character(round(rdist_val,5)))
 
 rdist_val = dt.Classification.roc.Apohele$auc
-rdist$auc <- paste(as.character(round(rdist_val,8)))
+rdist$Apohele.auc <- paste(as.character(round(rdist_val,8)))
 rdist_val = dt.Classification.roc.Apohele$optcut
-rdist$cutoff <- paste(as.character(round(rdist_val,5)))
+rdist$Apohele.optcut <- paste(as.character(round(rdist_val,5)))
 
 rdist_val = dt.Classification.roc.Apollo$auc
-rdist$auc <- paste(as.character(round(rdist_val,8)))
+rdist$Apollo.auc <- paste(as.character(round(rdist_val,8)))
 rdist_val = dt.Classification.roc.Apollo$optcut
-rdist$cutoff <- paste(as.character(round(rdist_val,5)))
+rdist$Apollo.optcut <- paste(as.character(round(rdist_val,5)))
 
 rdist_val = dt.Classification.roc.Aten$auc
-rdist$auc <- paste(as.character(round(rdist_val,8)))
+rdist$Aten.auc <- paste(as.character(round(rdist_val,8)))
 rdist_val = dt.Classification.roc.Aten$optcut
-rdist$cutoff <- paste(as.character(round(rdist_val,5)))
+rdist$Aten.optcut <- paste(as.character(round(rdist_val,5)))
+dt.Classification.ROC.All[rdist_name] <- c(rdist$Amor.auc,rdist$Amor.optcut,rdist$Apohele.auc,rdist$Apohele.optcut,rdist$Apollo.auc,rdist$Apollo.optcut,rdist$Aten.auc,rdist$Aten.optcut)
 
-dt.Classification.ROC.All[rdist_name] <- c(rdist$acc,rdist$sens,rdist$spec,rdist$prec,rdist$rec,rdist$f1,rdist$auc,rdist$cutoff)
 
 
 #IGHE MODEL
@@ -833,30 +829,29 @@ dt.Classification.All[dt.name] <- c(tdist$acc,tdist$sens,tdist$spec,tdist$prec,t
 
 
 rdist <- list()
-rdist_name <- paste("Class ",hyper.kernel,as.character(hyper.cost),sep=" ")  
+rdist_name <- paste("DT Classification IGHE ")  
 
+rdist <- list()
 rdist_val = dt.Classification.roc.Amor$auc
-rdist$auc <- paste(as.character(round(rdist_val,8)))
+rdist$Amor.auc <- paste(as.character(round(rdist_val,8)))
 rdist_val = dt.Classification.roc.Amor$optcut
-rdist$cutoff <- paste(as.character(round(rdist_val,5)))
+rdist$Amor.optcut <- paste(as.character(round(rdist_val,5)))
 
 rdist_val = dt.Classification.roc.Apohele$auc
-rdist$auc <- paste(as.character(round(rdist_val,8)))
+rdist$Apohele.auc <- paste(as.character(round(rdist_val,8)))
 rdist_val = dt.Classification.roc.Apohele$optcut
-rdist$cutoff <- paste(as.character(round(rdist_val,5)))
+rdist$Apohele.optcut <- paste(as.character(round(rdist_val,5)))
 
 rdist_val = dt.Classification.roc.Apollo$auc
-rdist$auc <- paste(as.character(round(rdist_val,8)))
+rdist$Apollo.auc <- paste(as.character(round(rdist_val,8)))
 rdist_val = dt.Classification.roc.Apollo$optcut
-rdist$cutoff <- paste(as.character(round(rdist_val,5)))
+rdist$Apollo.optcut <- paste(as.character(round(rdist_val,5)))
 
 rdist_val = dt.Classification.roc.Aten$auc
-rdist$auc <- paste(as.character(round(rdist_val,8)))
+rdist$Aten.auc <- paste(as.character(round(rdist_val,8)))
 rdist_val = dt.Classification.roc.Aten$optcut
-rdist$cutoff <- paste(as.character(round(rdist_val,5)))
-
-dt.Classification.ROC.All[rdist_name] <- c(rdist$acc,rdist$sens,rdist$spec,rdist$prec,rdist$rec,rdist$f1,rdist$auc,rdist$cutoff)
-
+rdist$Aten.optcut <- paste(as.character(round(rdist_val,5)))
+dt.Classification.ROC.All[rdist_name] <- c(rdist$Amor.auc,rdist$Amor.optcut,rdist$Apohele.auc,rdist$Apohele.optcut,rdist$Apollo.auc,rdist$Apollo.optcut,rdist$Aten.auc,rdist$Aten.optcut)
 
 
 #PLOT CLASSIFICATION
