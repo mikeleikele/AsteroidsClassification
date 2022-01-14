@@ -19,6 +19,17 @@ confidence_interval <- function(vector, interval) {
   result <- c("err" = error, "mean" = vec_mean)
   return(result)
 }
+actFun <- list()
+actFun$sigmoid <- function(x) {
+  1 / (1 + exp(-x))
+}
+actFun$relu <- function(x) {
+  max(0,x)
+}
+
+
+
+
 
 
 #load dataset RObject as asteroids_split
@@ -29,8 +40,10 @@ asteroids_split$train$Hazardous.int = as.factor(asteroids_split$train$Hazardous)
 #logistic binary or sigm, tanh
 #funz loss/obiettivo error quadr, cross entropy
 #multiclass relu
+act.fun_list = c('logistic',"tanh")
+
 network = neuralnet(Hazardous ~ Orbit.Axis..AU. + Orbit.Eccentricity + Orbit.Inclination..deg. + Perihelion.Argument..deg. + Node.Longitude..deg. + Mean.Anomoly..deg. + Perihelion.Distance..AU. + Aphelion.Distance..AU. + Orbital.Period..yr. + Minimum.Orbit.Intersection.Distance..AU. + Asteroid.Magnitude,
-                    asteroids_split$train[1:500,], hidden=7,
+                    asteroids_split$train[1:500,], hidden=5,
                     linear.output = FALSE)
 
 net.predict = predict(network, asteroids_split$test[1:100,])
