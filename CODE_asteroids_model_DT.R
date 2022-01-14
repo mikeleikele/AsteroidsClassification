@@ -98,7 +98,7 @@ dt.Hazardous$MacroSpecificity <- data.frame(mx)
 dt.Hazardous$MacroPrecision <- data.frame(mx)
 dt.Hazardous$MacroRecall <- data.frame(mx)
 dt.Hazardous$MacroF1 <- data.frame(mx)
-dt.Hazardous$AUC <- data.frame(mx)
+dt.Hazardous$auc <- data.frame(mx)
 dt.Hazardous$CutOffOpt <- data.frame(mx)
 dt.Hazardous_ROC.x <- matrix()
 dt.Hazardous_ROC.y <- matrix()
@@ -174,9 +174,13 @@ for (i in 1:length(folds)) {
    ROCFun.pred = predict(decisionTree.Hazardous.GINI,fold.valid,  probability=TRUE)
    ROCFun.pred.prob = ROCFun.pred#attr(ROCFun.pred, "probabilities")
    
+   
    dt.Hazardous.GINI.stats.roc.pred.prob = rbind(dt.Hazardous.GINI.stats.roc.pred.prob,ROCFun.pred.prob )
    dt.Hazardous.GINI.stats.roc.thruth = append(dt.Hazardous.GINI.stats.roc.thruth, as.factor(fold.valid$Hazardous))
-
+   
+   ROC_true = ROCFunction.BIN(ROCFun.pred.prob,as.factor(fold.valid$Hazardous),"TRUE")
+   
+   dt.Hazardous.GINI.foldstats$auc = append(dt.Hazardous.GINI.foldstats$auc,ROC_true)
    
    #IGHE
    decisionTree.Hazardous.IGHE.prediction <- predict(decisionTree.Hazardous.IGHE, fold.valid, type = "class")
@@ -230,6 +234,9 @@ for (i in 1:length(folds)) {
    dt.Hazardous.IGHE.stats.roc.pred.prob = rbind(dt.Hazardous.IGHE.stats.roc.pred.prob,ROCFun.pred.prob )
    dt.Hazardous.IGHE.stats.roc.thruth = append(dt.Hazardous.IGHE.stats.roc.thruth, as.factor(fold.valid$Hazardous))
    
+   ROC_true = ROCFunction.BIN(ROCFun.pred.prob,as.factor(fold.valid$Hazardous),"TRUE")
+   
+   dt.Hazardous.IGHE.foldstats$auc = append(dt.Hazardous.IGHE.foldstats$auc,ROC_true)
   
   decisionTree.Hazardous.GINI.confusion_matrix = table(fold.valid$Hazardous, decisionTree.Hazardous.GINI.prediction)
   decisionTree.Hazardous.IGHE.confusion_matrix = table(fold.valid$Hazardous, decisionTree.Hazardous.IGHE.prediction)
@@ -257,7 +264,7 @@ dt.Hazardous$MacroSpecificity[dt.GINI.name] <- dt.Hazardous.GINI.foldstats$Macro
 dt.Hazardous$MacroPrecision[dt.GINI.name] <- dt.Hazardous.GINI.foldstats$MacroPrecision
 dt.Hazardous$MacroRecall[dt.GINI.name] <- dt.Hazardous.GINI.foldstats$MacroRecall
 dt.Hazardous$MacroF1[dt.GINI.name] <- dt.Hazardous.GINI.foldstats$MacroF1
-dt.Hazardous$AUC[dt.GINI.name] <- dt.Hazardous.GINI.roc$auc
+dt.Hazardous$auc[dt.GINI.name] <- dt.Hazardous.GINI.foldstats$auc
 dt.Hazardous$CutOffOpt[dt.GINI.name] <- dt.Hazardous.GINI.roc$optcut
 dt.Hazardous_ROC.name = c(dt.Hazardous_ROC.name, dt.GINI.name)
 dt.Hazardous_ROC.x <- cbindX(dt.Hazardous_ROC.x, data.frame(dt.Hazardous.GINI.roc$x.value))
@@ -285,9 +292,10 @@ tdist$rec <- paste(as.character(round(tdist_val[2],4))," ± ",as.character(round(
 tdist_val = confidence_interval(as.vector(dt.Hazardous.GINI.foldstats$MacroF1),0.95)
 tdist$f1 <- paste(as.character(round(tdist_val[2],4))," ± ",as.character(round(tdist_val[1],4)))
 
+tdist_val = confidence_interval(as.vector(dt.Hazardous.GINI.foldstats$auc),0.95)
+tdist$auc <- paste(as.character(round(tdist_val[2],6))," ± ",as.character(round(tdist_val[1],4)))
 
-tdist_val = dt.Hazardous.GINI.roc$auc
-tdist$auc <- paste(as.character(round(tdist_val,8)))
+
 tdist_val = dt.Hazardous.GINI.roc$optcut
 tdist$cutoff <- paste(as.character(round(tdist_val,5)))
 
@@ -331,8 +339,9 @@ tdist$rec <- paste(as.character(round(tdist_val[2],4))," ± ",as.character(round(
 tdist_val = confidence_interval(as.vector(dt.Hazardous.IGHE.foldstats$MacroF1),0.95)
 tdist$f1 <- paste(as.character(round(tdist_val[2],4))," ± ",as.character(round(tdist_val[1],4)))
 
-tdist_val = dt.Hazardous.IGHE.roc$auc
-tdist$auc <- paste(as.character(round(tdist_val,8)))
+tdist_val = confidence_interval(as.vector(dt.Hazardous.IGHE.foldstats$auc),0.95)
+tdist$auc <- paste(as.character(round(tdist_val[2],6))," ± ",as.character(round(tdist_val[1],4)))
+
 tdist_val = dt.Hazardous.IGHE.roc$optcut
 tdist$cutoff <- paste(as.character(round(tdist_val,5)))
 
@@ -405,7 +414,7 @@ pdf(img_name_plot, height = 20, width = 46)
 grid.table(t(dt.Hazardous.All[2:length(dt.Hazardous.All)]))
 dev.off()
 
-rm(i)
+
 decisionTree.Hazardous.GINI.stats <- decisionTree.Hazardous.GINI.stats / length(folds)
 decisionTree.Hazardous.IGHE.stats <- decisionTree.Hazardous.IGHE.stats / length(folds)
 
@@ -472,6 +481,7 @@ dt.Classification$MacroSpecificity <- data.frame(mx)
 dt.Classification$MacroPrecision <- data.frame(mx)
 dt.Classification$MacroRecall <- data.frame(mx)
 dt.Classification$MacroF1 <- data.frame(mx)
+dt.Classification$auc <- data.frame(mx)
 #Amor
 dt.Classification$Amor.AUC <- data.frame(mx)
 dt.Classification$Amor.CutOffOpt <- data.frame(mx)
@@ -612,14 +622,14 @@ for (i in 1:length(folds)) {
   MacroSpecificity.GINI = (0.25 * spec_Amor.GINI) + (0.25 * spec_Apohele.GINI) + (0.25 * spec_Apollo.GINI) + (0.25 * spec_Aten.GINI)
   MacroPrecision.GINI = (0.25 * prec_Amor.GINI) + (0.25 * prec_Apohele.GINI) + (0.25 * prec_Apollo.GINI) + (0.25 * prec_Aten.GINI)
   MacroRecall.GINI = (0.25 * recal_Amor.GINI) + (0.25 * recal_Apohele.GINI) + (0.25 * recal_Apollo.GINI) + (0.25 * recal_Aten.GINI)
-  MacroF1.GINI = (0.25 * f1_Amor.GINI) + (0.25 * f1_Apohele.GINI) + (0.25 * f1_Apollo.GINI) + (0.25 * prec_Aten.GINI)
+  MacroF1.GINI = (0.25 * f1_Amor.GINI) + (0.25 * f1_Apohele.GINI) + (0.25 * f1_Apollo.GINI) + (0.25 * f1_Aten.GINI)
   
   #IGHE MACROs
   MacroSensitivity.IGHE = (0.25 * sens_Amor.IGHE) + (0.25 * sens_Apohele.IGHE) + (0.25 * sens_Apollo.IGHE) + (0.25 * sens_Aten.IGHE)
   MacroSpecificity.IGHE = (0.25 * spec_Amor.IGHE) + (0.25 * spec_Apohele.IGHE) + (0.25 * spec_Apollo.IGHE) + (0.25 * spec_Aten.IGHE)
   MacroPrecision.IGHE = (0.25 * prec_Amor.IGHE) + (0.25 * prec_Apohele.IGHE) + (0.25 * prec_Apollo.IGHE) + (0.25 * prec_Aten.IGHE)
   MacroRecall.IGHE = (0.25 * recal_Amor.IGHE) + (0.25 * recal_Apohele.IGHE) + (0.25 * recal_Apollo.IGHE) + (0.25 * recal_Aten.IGHE)
-  MacroF1.IGHE = (0.25 * f1_Amor.IGHE) + (0.25 * f1_Apohele.IGHE) + (0.25 * f1_Apollo.IGHE) + (0.25 * prec_Aten.IGHE)
+  MacroF1.IGHE = (0.25 * f1_Amor.IGHE) + (0.25 * f1_Apohele.IGHE) + (0.25 * f1_Apollo.IGHE) + (0.25 * f1_Aten.IGHE)
   
   dt.Classification.GINI.foldstats$Accuracy    = append(dt.Classification.GINI.foldstats$Accuracy, decisionTree.Classification.GINI.confusion_matrix_multiclass$overall["Accuracy"])
   dt.Classification.GINI.foldstats$MacroSensitivity = append(dt.Classification.GINI.foldstats$MacroSensitivity, MacroSensitivity.GINI)
