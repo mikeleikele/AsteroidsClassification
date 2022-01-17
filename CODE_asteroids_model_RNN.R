@@ -100,7 +100,7 @@ folds.number = 5
 hiddenLayers_list = list(c(7),c(14,7))#,c(5),c(10,5))
 actFun_list = list("tanh","logistic")#,actFun$softplus,actFun$relu,actFun$sigmoid)
 actFun_listname = list("tanh","logistic")#,"softplus","relu","sigmoid")
-learningRate_list = list(1e-1)
+learningRate_list = list(1e-3)
 lossFun_list = list(NULL)
 lossFun_listname = list("Loss A")
 stepmax_val = 1e6
@@ -164,6 +164,7 @@ for (hl in 1:length(hiddenLayers_list)) {
                               hidden = hiddenL_val,
                               act.fct = actFun_val,
                               learningrate = lr_val,
+                              lossFunction = loss_f,
                               stepmax = 1e7,
                               linear.output = FALSE)
           
@@ -210,7 +211,7 @@ for (hl in 1:length(hiddenLayers_list)) {
         #end kfold
         
         img_name_plot <- paste("IMG_asteroids_model_RNN_", rnn.name ,"_confusion" ,".png", sep = "")
-          png(img_name_plot)
+          png(img_name_plot,res = 800, height = 10, width = 15, unit='in')
           grid.table(folds_confusion)
           dev.off()
         
@@ -499,7 +500,7 @@ for (hl in 1:length(hiddenLayers_list)) {
         
         #end kfold
         img_name_plot <- paste("IMG_asteroids_model_SWM_", rnn.name ,"_confusion" ,".png", sep = "")
-          png(img_name_plot)
+          png(img_name_plot,res = 800, height = 10, width = 15, unit='in')
           grid.table(folds_confusion)
           dev.off()
         
@@ -622,7 +623,7 @@ for (ROCPlot.x.classindex in 2:length(ROCPlot.x.class)){
   ROCPlot.y.classindex = which(ROCPlot.y.class == ROCPlot.x.class[ROCPlot.x.classindex])
   
   ROCPlot.x = unlist(rnn.Classification_ROC.Amor.x[,ROCPlot.x.classindex], use.names=FALSE)
-  ROCPlot.y = unlist(rnn.Classification_ROC.Amor.x[,ROCPlot.y.classindex], use.names=FALSE)
+  ROCPlot.y = unlist(rnn.Classification_ROC.Amor.y[,ROCPlot.y.classindex], use.names=FALSE)
   lines(ROCPlot.x, ROCPlot.y, col=plot.models.color[ROCPlot.x.classindex-1],lwd=1)    
 }
 legend("right", title="models",legend=ROCPlot.y.class,lwd=5, col=plot.models.color,horiz=FALSE)

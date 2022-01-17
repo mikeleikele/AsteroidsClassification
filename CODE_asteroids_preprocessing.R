@@ -11,6 +11,8 @@ asteroids_data[cat_cols] <- lapply(asteroids_data[cat_cols], as.factor)
 asteroids_data[log_cols] <- lapply(asteroids_data[log_cols], as.logical)
 asteroids_data[double_cols] <- lapply(asteroids_data[double_cols], as.numeric )
 
+asteroids_data$Hazardous.int = as.factor(asteroids_data$Hazardous)
+
 asteroids_datatype <- sapply(asteroids_data, class)
 
 #remove object useless
