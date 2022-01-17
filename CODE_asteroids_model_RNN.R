@@ -7,6 +7,7 @@ library(caret)
 library(tidyverse)
 library(ROCR)
 library(gdata)
+library(reshape)
 library(devtools)
 source_url('https://gist.githubusercontent.com/fawda123/7471137/raw/466c1474d0a505ff044412703516c34f1a4684a5/nnet_plot_update.r')
 
@@ -27,12 +28,8 @@ confidence_interval <- function(vector, interval) {
 }
 
 Confusion_Sum <- function(cm_global, data, reference){
-  cm_fold <- table(reference, data)
-  if (is.null(cm_global)){
-    cm_global <- cm_fold
-  }else{
-    cm_global <- cm_global + cm_fold
-  }
+  cm_fold <- data.frame(Predicted=data,Reality=reference)
+  cm_global <- rbind(cm_global, cm_fold)
   return(cm_global)
 }
 
@@ -97,13 +94,13 @@ load("DATA_asteroids_dataset_split_0.7.RData")
 
 folds.number = 5
 
-hiddenLayers_list = list(c(7),c(14,7))#,c(5),c(10,5))
+hiddenLayers_list = list(c(7))#,c(14,7))#,c(5),c(10,5))
 actFun_list = list("tanh","logistic")#,actFun$softplus,actFun$relu,actFun$sigmoid)
 actFun_listname = list("tanh","logistic")#,"softplus","relu","sigmoid")
-learningRate_list = list(1e-3)
+learningRate_list = list(1e-4)
 lossFun_list = list(NULL)
 lossFun_listname = list("Loss A")
-stepmax_val = 1e6
+stepmax_val = 1e5
 
 folds <- split(asteroids_split$train, cut(sample(1:nrow(asteroids_split$train)), folds.number))
 rm(folds.number)
@@ -159,12 +156,12 @@ for (hl in 1:length(hiddenLayers_list)) {
           fold.train <- fold.train[, !names(fold.train) %in% c(".id")]
           
           #manca LOSS loss_f
-          rnn.Hazardous.model = neuralnet(Hazardous ~ Orbit.Axis..AU. + Orbit.Eccentricity + Orbit.Inclination..deg. + Perihelion.Argument..deg. + Node.Longitude..deg. + Mean.Anomoly..deg. + Perihelion.Distance..AU. + Aphelion.Distance..AU. + Orbital.Period..yr. + Minimum.Orbit.Intersection.Distance..AU. + Asteroid.Magnitude,
-                              fold.train[1:300,],
+          rnn.Hazardous.model <- neuralnet(Hazardous ~ Orbit.Axis..AU._scaled_scaled + Orbit.Eccentricity_scaled + Orbit.Inclination..deg._scaled + Perihelion.Argument..deg._scaled + Node.Longitude..deg._scaled + Mean.Anomoly..deg._scaled + Perihelion.Distance..AU._scaled + Aphelion.Distance..AU._scaled + Orbital.Period..yr._scaled + Minimum.Orbit.Intersection.Distance..AU._scaled + Asteroid.Magnitude_scaled,
+                              fold.train[1:200,],
                               hidden = hiddenL_val,
                               act.fct = actFun_val,
                               learningrate = lr_val,
-                              lossFunction = loss_f,
+                              #lossFunction = loss_f,
                               stepmax = 1e7,
                               linear.output = FALSE)
           
@@ -184,16 +181,16 @@ for (hl in 1:length(hiddenLayers_list)) {
           f1_true   = rnn.Hazardous.confusion_matrix_true$byClass["F1"]
           
           sens_false = rnn.Hazardous.confusion_matrix_false$byClass["Sensitivity"]
-          spec_fasle = rnn.Hazardous.confusion_matrix_false$byClass["Specificity"]
+          spec_false = rnn.Hazardous.confusion_matrix_false$byClass["Specificity"]
           prec_false = rnn.Hazardous.confusion_matrix_false$byClass["Precision"]
           recal_false = rnn.Hazardous.confusion_matrix_false$byClass["Recall"]
           f1_false = rnn.Hazardous.confusion_matrix_false$byClass["F1"]
           
-          MacroSensitivity = (0.5 * sens_true) + (0.5 * sens_false)
-          MacroSpecificity = (0.5 * spec_true) + (0.5 * spec_fasle)
-          MacroPrecision = (0.5 * prec_true) + (0.5 * prec_false)
-          MacroRecall = (0.5 * recal_true) + (0.5 * recal_false)
-          MacroF1 = (0.5 * f1_true) + (0.5 * f1_false)
+          MacroSensitivity = mean(c(sens_true, sens_false),  na.rm = TRUE)
+          MacroSpecificity = mean(c(spec_true, spec_false),  na.rm = TRUE)
+          MacroPrecision = mean(c(prec_true, prec_false),  na.rm = TRUE)
+          MacroRecall = mean(c(recal_true, recal_false),  na.rm = TRUE)
+          MacroF1 = mean(c(f1_true, f1_false),  na.rm = TRUE)
           
           rnn.Hazardous.stats$Accuracy    = append(rnn.Hazardous.stats$Accuracy, rnn.Hazardous.confusion_matrix_true$overall["Accuracy"])
           rnn.Hazardous.stats$MacroSensitivity = append(rnn.Hazardous.stats$MacroSensitivity, MacroSensitivity)
@@ -212,7 +209,7 @@ for (hl in 1:length(hiddenLayers_list)) {
         
         img_name_plot <- paste("IMG_asteroids_model_RNN_", rnn.name ,"_confusion" ,".png", sep = "")
           png(img_name_plot,res = 800, height = 10, width = 15, unit='in')
-          grid.table(folds_confusion)
+          grid.table(table(folds_confusion))
           dev.off()
         
         rnn.Hazardous.roc = ROCFunction.BIN(rnn.Hazardous.stats.roc.pred.prob,rnn.Hazardous.stats.roc.thruth)
@@ -267,7 +264,18 @@ for (hl in 1:length(hiddenLayers_list)) {
   png(img_name_plot, res = 800, height = 10, width = 15, unit='in')
   plot.nnet(rnn.Hazardous.model)
     dev.off()
+  
+  img_name_plot <- paste("IMG_asteroids_model_RNN_", "Hazardous_generalized_weights", ".png", sep = "")
+  png(img_name_plot, res = 800, height = 10, width = 15, unit='in')
+    par(mfrow=c(2,2))
+    gwplot(rnn.Hazardous.model,selected.covariate="Minimum.Orbit.Intersection.Distance..AU._scaled")
+    gwplot(rnn.Hazardous.model,selected.covariate="Asteroid.Magnitude_scaled")
+    gwplot(rnn.Hazardous.model,selected.covariate="Perihelion.Distance..AU._scaled")
+    gwplot(rnn.Hazardous.model,selected.covariate="Orbit.Axis..AU._scaled_scaled")
+    
+    dev.off()
 }
+
 end_table <- length(rnn.Hazardous$Accuracy)
 plot.models.color = rainbow(end_table-1)
 
@@ -351,13 +359,13 @@ dev.off()
 
 folds.number = 5
 
-hiddenLayers_list = list(c(7),c(14,7))#,c(5),c(10,5))
-actFun_list = list("tanh","logistic")#,actFun$softplus,actFun$relu,actFun$sigmoid)
-actFun_listname = list("tanh","logistic")#,"softplus","relu","sigmoid")
-learningRate_list = list(1e-1)
+hiddenLayers_list = list(c(7),c(14,7))#c(5),c(10,5))
+actFun_list = list("tanh")#,"logistic")#,actFun$softplus,actFun$relu,actFun$sigmoid)
+actFun_listname = list("tanh")#,"logistic")#,"softplus","relu","sigmoid")
+learningRate_list = list(1e-4)
 lossFun_list = list(NULL)
 lossFun_listname = list("Loss A")
-stepmax_val = 1e6
+stepmax_val = 1e5
 
 asteroids_split$train$Amor = asteroids_split$train$Classification == "Amor Asteroid"
 asteroids_split$train$Apohele = asteroids_split$train$Classification == "Apohele Asteroid"
@@ -438,12 +446,12 @@ for (hl in 1:length(hiddenLayers_list)) {
           
           print(paste(as.character(i), rnn.model_printname, sep = " "))
           #manca LOSS loss_f
-          rnn.Classification.model = neuralnet(Amor+Apohele+Apollo+Aten ~ Orbit.Axis..AU. + Orbit.Eccentricity + Orbit.Inclination..deg. + Perihelion.Argument..deg. + Node.Longitude..deg. + Mean.Anomoly..deg. + Perihelion.Distance..AU. + Aphelion.Distance..AU. + Orbital.Period..yr. + Minimum.Orbit.Intersection.Distance..AU. + Asteroid.Magnitude,
+          rnn.Classification.model = neuralnet(Amor+Apohele+Apollo+Aten ~ Orbit.Axis..AU._scaled_scaled + Orbit.Eccentricity_scaled + Orbit.Inclination..deg._scaled + Perihelion.Argument..deg._scaled + Node.Longitude..deg._scaled + Mean.Anomoly..deg._scaled + Perihelion.Distance..AU._scaled + Aphelion.Distance..AU._scaled + Orbital.Period..yr._scaled + Minimum.Orbit.Intersection.Distance..AU._scaled + Asteroid.Magnitude_scaled,
                                                fold.train[1:20,],
                                                hidden = hiddenL_val,
                                                act.fct = actFun_val,
                                                learningrate = lr_val,
-                                               stepmax=1e7,
+                                               stepmax=stepmax_val,
                                                linear.output = TRUE)
             
           rnn.Classification.pred = predict(rnn.Classification.model, fold.valid)
@@ -500,8 +508,8 @@ for (hl in 1:length(hiddenLayers_list)) {
         
         #end kfold
         img_name_plot <- paste("IMG_asteroids_model_SWM_", rnn.name ,"_confusion" ,".png", sep = "")
-          png(img_name_plot,res = 800, height = 10, width = 15, unit='in')
-          grid.table(folds_confusion)
+        png(img_name_plot,res = 800, height = 10, width = 15, unit='in')
+          grid.table(table(folds_confusion))
           dev.off()
         
         
@@ -602,9 +610,19 @@ for (hl in 1:length(hiddenLayers_list)) {
     }
   }
   img_name_plot <- paste("IMG_asteroids_model_RNN_", "Classification_HIDDEN_LAYER_",paste(hiddenL_val, collapse = "+") ,".png", sep = "")
-  plot(rnn.Classification.model, res = 800, height = 10, width = 15, unit='in')
-    plot.nnet(rnn.Hazardous.model)
+  png(img_name_plot, res = 800, height = 10, width = 15, unit='in')
+    plot.nnet(rnn.Classification.model)
     dev.off()
+    
+  img_name_plot <- paste("IMG_asteroids_model_RNN_", "Classification_generalized_weights", ".png", sep = "")
+  png(img_name_plot, res = 800, height = 10, width = 15, unit='in')
+  par(mfrow=c(2,2))
+    gwplot(rnn.Classification.model,selected.covariate="Perihelion.Distance..AU._scaled")
+    gwplot(rnn.Classification.model,selected.covariate="Orbit.Axis..AU._scaled_scaled")
+    gwplot(rnn.Classification.model,selected.covariate="Aphelion.Distance..AU._scaled")
+    gwplot(rnn.Classification.model,selected.covariate="Perihelion.Argument..deg._scaled")
+    dev.off()
+     
 }
 end_table <- length(rnn.Classification$Accuracy)
 plot.models.color = rainbow(end_table-1)
@@ -704,3 +722,4 @@ img_name_plot <- paste("PDF_asteroids_model_RNN_", "Classification_KFOLD_perform
 pdf(img_name_plot, height = 20, width = 46)
 grid.table(t(rnn.Classification.ROC.All[2:length(rnn.Classification.ROC.All)]))
 dev.off()
+
