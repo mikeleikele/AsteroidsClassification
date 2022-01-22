@@ -101,283 +101,13 @@ ROCFunction.MULTI <- function(ROCFun.pred.prob, testLabels, classInLabel){
     auc = ROCFun.perf.rocr@y.values, optcut = ROCFun.perf.optcut))
 }
 
-load("DATA_asteroids_dataset_split_0.7.RData")
+load("DATA_asteroids_dataset_split_neg_0.7.RData")
 asteroids_split$train$Hazardous.int = as.factor(asteroids_split$train$Hazardous)
 asteroids_split$test$Hazardous.int = as.factor(asteroids_split$test$Hazardous)
 
 
 
-#Hazardous
-all.Hazardous <- list()
-mx = matrix(NA, nrow = 3)
-all.Hazardous$Accuracy = data.frame(mx)
-all.Hazardous$MacroSensitivity <- data.frame(mx)
-all.Hazardous$MacroSpecificity <- data.frame(mx)
-all.Hazardous$MacroPrecision <- data.frame(mx)
-all.Hazardous$MacroRecall <- data.frame(mx)
-all.Hazardous$MacroF1 <- data.frame(mx)
-all.Hazardous$AUC <- data.frame(mx)
-all.Hazardous$CutOffOpt <- data.frame(mx)
-all.Hazardous_ROC.x <- matrix()
-all.Hazardous_ROC.y <- matrix()
-all.Hazardous_ROC.name <- c(NA)
 
-mx = matrix(NA, nrow = 8)
-all.Hazardous.All <- data.frame(mx)
-all.Hazardous.All["Performance"] = c("Accuracy","MacroSensitivity","MacroSpecificity","MacroPrecision","MacroRecall","MacroF1","AUC","OptimalCutOff")
-rm(mx)
-
-#DT
-dt.model.Hazardous <- rpart(Hazardous.int ~ Orbit.Axis..AU. + Orbit.Eccentricity + Orbit.Inclination..deg. + Perihelion.Argument..deg. + Node.Longitude..deg. + Mean.Anomoly..deg. + Perihelion.Distance..AU. + Aphelion.Distance..AU. + Orbital.Period..yr. + Minimum.Orbit.Intersection.Distance..AU. + Asteroid.Magnitude,
-  data=asteroids_split$train, cp= 0.001) #. all var
-
-dt.Hazardous.pred <- predict(dt.model.Hazardous, asteroids_split$test, type = "class")
-dt.Hazardous.pred.prob <- predict(dt.model.Hazardous, asteroids_split$test, probability=TRUE)
-
-
-dt.Hazardous.confusion_matrix_true = confusionMatrix(
-  data=dt.Hazardous.pred, reference=asteroids_split$test$Hazardous.int, 
-  positive="TRUE", mode = "prec_recall") 
-dt.Hazardous.confusion_matrix_false = confusionMatrix(
-  data=dt.Hazardous.pred, reference=asteroids_split$test$Hazardous.int, 
-  positive="FALSE", mode = "prec_recall") 
-  
-folds_confusion <- NULL
-folds_confusion <- Confusion_Sum(folds_confusion, reference=asteroids_split$test$Hazardous.int, data=dt.Hazardous.pred)
-img_name_plot <- paste("IMG_asteroids_model_BEST_DT_Hazardous_confusion" ,".png", sep = "")
-  png(img_name_plot)
-  grid.table(folds_confusion)
-  dev.off()
-
-  sens_true = dt.Hazardous.confusion_matrix_true$byClass["Sensitivity"]
-  spec_true= dt.Hazardous.confusion_matrix_true$byClass["Specificity"]
-  prec_true= dt.Hazardous.confusion_matrix_true$byClass["Precision"]
-  recal_true= dt.Hazardous.confusion_matrix_true$byClass["Recall"]
-  f1_true= dt.Hazardous.confusion_matrix_true$byClass["F1"]
-  
-  sens_false =  dt.Hazardous.confusion_matrix_false$byClass["Sensitivity"]
-  spec_false =  dt.Hazardous.confusion_matrix_false$byClass["Specificity"]
-  prec_false =  dt.Hazardous.confusion_matrix_false$byClass["Precision"]
-  recal_false = dt.Hazardous.confusion_matrix_false$byClass["Recall"]
-  f1_false =    dt.Hazardous.confusion_matrix_false$byClass["F1"]
-  
-  Accuracy = dt.Hazardous.confusion_matrix_true$overall['Accuracy']
-  MacroSensitivity = (0.5 * sens_true) + (0.5 * sens_false)
-  MacroSpecificity = (0.5 * spec_true) + (0.5 * spec_false)
-  MacroPrecision = (0.5 * prec_true) + (0.5 * prec_false)
-  MacroRecall = (0.5 * recal_true) + (0.5 * recal_false)
-  MacroF1 = (0.5 * f1_true) + (0.5 * f1_false)
-  
-ROC = ROCFunction.BIN(dt.Hazardous.pred.prob,asteroids_split$test$Hazardous.int,"TRUE")
-mod.name <- paste("Hazardous DT")
-all.Hazardous$Accuracy[mod.name] <- Accuracy
-all.Hazardous$MacroSensitivity[mod.name] <- MacroSensitivity
-all.Hazardous$MacroSpecificity[mod.name] <- MacroSpecificity
-all.Hazardous$MacroPrecision[mod.name] <- MacroPrecision
-all.Hazardous$MacroRecall[mod.name] <- MacroRecall
-all.Hazardous$MacroF1[mod.name] <- MacroF1
-all.Hazardous$AUC[mod.name] <- ROC$auc
-all.Hazardous$CutOffOpt[mod.name] <- ROC$optcut
-
-all.Hazardous_ROC.name = c(all.Hazardous_ROC.name, mod.name)
-all.Hazardous_ROC.x <- cbindX(all.Hazardous_ROC.x, data.frame(ROC$x.value))
-colnames(all.Hazardous_ROC.x) <- all.Hazardous_ROC.name
-all.Hazardous_ROC.y <- cbindX(all.Hazardous_ROC.y, data.frame(ROC$y.value))
-colnames(all.Hazardous_ROC.y) <- all.Hazardous_ROC.name
-
-all.Hazardous.All[mod.name] <- c(Accuracy, MacroSensitivity, MacroSpecificity, MacroPrecision, MacroRecall, MacroF1, ROC$auc,ROC$optcut)
-
-tdist <- list()
-tdist$acc <- paste(as.character(round(Accuracy,4)))
-tdist$sens <- paste(as.character(round(MacroSensitivity,4)))
-tdist$spec <- paste(as.character(round(MacroSpecificity,4)))
-tdist$prec <- paste(as.character(round(MacroPrecision,4)))
-tdist$rec <- paste(as.character(round(MacroRecall,4)))
-tdist$f1 <- paste(as.character(round(MacroF1,4)))
-tdist$auc <- paste(as.character(round(ROC$auc,8)))
-tdist$cutoff <- paste(as.character(round(ROC$optcut,5)))
-all.Hazardous.All[mod.name] <- c(tdist$acc,tdist$sens,tdist$spec,tdist$prec,tdist$rec,tdist$f1,tdist$auc,tdist$cutoff)
-
-
-#SVM
-dt.model.Hazardous = svm(Hazardous ~ Orbit.Axis..AU. + Orbit.Eccentricity + Orbit.Inclination..deg. + Perihelion.Argument..deg. + Node.Longitude..deg. + Mean.Anomoly..deg. + Perihelion.Distance..AU. + Aphelion.Distance..AU. + Orbital.Period..yr. + Minimum.Orbit.Intersection.Distance..AU. + Asteroid.Magnitude,
-                                                data=asteroids_split$train, kernel="radial", cost=10, type="C-classification",probability = TRUE)
-
-dt.Hazardous.pred <- predict(dt.model.Hazardous, asteroids_split$test, type = "class")
-dt.Hazardous.pred.prob <- predict(dt.model.Hazardous, asteroids_split$test, probability=TRUE)
-
-
-dt.Hazardous.confusion_matrix_true = confusionMatrix(
-  data=dt.Hazardous.pred, reference=asteroids_split$test$Hazardous.int,
-  positive="TRUE", mode = "prec_recall") 
-dt.Hazardous.confusion_matrix_false = confusionMatrix(
-  data=dt.Hazardous.pred, reference=asteroids_split$test$Hazardous.int, 
-  positive="FALSE", mode = "prec_recall") 
-
-folds_confusion <- NULL
-folds_confusion <- Confusion_Sum(folds_confusion, reference=asteroids_split$test$Hazardous.int, data=dt.Hazardous.pred)
-img_name_plot <- paste("IMG_asteroids_model_BEST_SVM_Hazardous_confusion" ,".png", sep = "")
-  png(img_name_plot)
-  grid.table(folds_confusion)
-  dev.off()
-
-sens_true = dt.Hazardous.confusion_matrix_true$byClass["Sensitivity"]
-spec_true= dt.Hazardous.confusion_matrix_true$byClass["Specificity"]
-prec_true= dt.Hazardous.confusion_matrix_true$byClass["Precision"]
-recal_true= dt.Hazardous.confusion_matrix_true$byClass["Recall"]
-f1_true= dt.Hazardous.confusion_matrix_true$byClass["F1"]
-
-sens_false =  dt.Hazardous.confusion_matrix_false$byClass["Sensitivity"]
-spec_false =  dt.Hazardous.confusion_matrix_false$byClass["Specificity"]
-prec_false =  dt.Hazardous.confusion_matrix_false$byClass["Precision"]
-recal_false = dt.Hazardous.confusion_matrix_false$byClass["Recall"]
-f1_false =    dt.Hazardous.confusion_matrix_false$byClass["F1"]
-
-Accuracy = dt.Hazardous.confusion_matrix_true$overall['Accuracy']
-MacroSensitivity = (0.5 * sens_true) + (0.5 * sens_false)
-MacroSpecificity = (0.5 * spec_true) + (0.5 * spec_false)
-MacroPrecision = (0.5 * prec_true) + (0.5 * prec_false)
-MacroRecall = (0.5 * recal_true) + (0.5 * recal_false)
-MacroF1 = (0.5 * f1_true) + (0.5 * f1_false)
-
-ROC = ROCFunction.BIN(attr(dt.Hazardous.pred.prob, "probabilities"),asteroids_split$test$Hazardous.int,"TRUE")
-mod.name <- paste("Hazardous SVM")
-all.Hazardous$Accuracy[mod.name] <- Accuracy
-all.Hazardous$MacroSensitivity[mod.name] <- MacroSensitivity
-all.Hazardous$MacroSpecificity[mod.name] <- MacroSpecificity
-all.Hazardous$MacroPrecision[mod.name] <- MacroPrecision
-all.Hazardous$MacroRecall[mod.name] <- MacroRecall
-all.Hazardous$MacroF1[mod.name] <- MacroF1
-all.Hazardous$AUC[mod.name] <- ROC$auc
-all.Hazardous$CutOffOpt[mod.name] <- ROC$optcut
-
-all.Hazardous_ROC.name = c(all.Hazardous_ROC.name, mod.name)
-all.Hazardous_ROC.x <- cbindX(all.Hazardous_ROC.x, data.frame(ROC$x.value))
-colnames(all.Hazardous_ROC.x) <- all.Hazardous_ROC.name
-all.Hazardous_ROC.y <- cbindX(all.Hazardous_ROC.y, data.frame(ROC$y.value))
-colnames(all.Hazardous_ROC.y) <- all.Hazardous_ROC.name
-
-all.Hazardous.All[mod.name] <- c(Accuracy, MacroSensitivity, MacroSpecificity, MacroPrecision, MacroRecall, MacroF1, ROC$auc,ROC$optcut)
-tdist <- list()
-tdist$acc <- paste(as.character(round(Accuracy,4)))
-tdist$sens <- paste(as.character(round(MacroSensitivity,4)))
-tdist$spec <- paste(as.character(round(MacroSpecificity,4)))
-tdist$prec <- paste(as.character(round(MacroPrecision,4)))
-tdist$rec <- paste(as.character(round(MacroRecall,4)))
-tdist$f1 <- paste(as.character(round(MacroF1,4)))
-tdist$auc <- paste(as.character(round(ROC$auc,8)))
-tdist$cutoff <- paste(as.character(round(ROC$optcut,5)))
-all.Hazardous.All[mod.name] <- c(tdist$acc,tdist$sens,tdist$spec,tdist$prec,tdist$rec,tdist$f1,tdist$auc,tdist$cutoff)
-
-# RNN
-dt.model.Hazardous = neuralnet(Hazardous ~ Orbit.Axis..AU. + Orbit.Eccentricity + Orbit.Inclination..deg. + Perihelion.Argument..deg. + Node.Longitude..deg. + Mean.Anomoly..deg. + Perihelion.Distance..AU. + Aphelion.Distance..AU. + Orbital.Period..yr. + Minimum.Orbit.Intersection.Distance..AU. + Asteroid.Magnitude,
-                               asteroids_split$train[1:200,],
-                               hidden = 7,
-                               stepmax = 1e5,
-                               linear.output = FALSE)
-dt.Hazardous.pred.prob <- predict(dt.model.Hazardous, asteroids_split$test)
-dt.Hazardous.pred <- dt.Hazardous.pred.prob[,1] > 0.5
-
-
-
-dt.Hazardous.confusion_matrix_true = confusionMatrix(
-  data=as.factor(dt.Hazardous.pred), reference=as.factor(asteroids_split$test$Hazardous),
-  positive="TRUE", mode = "prec_recall") 
-dt.Hazardous.confusion_matrix_false = confusionMatrix(
-  data=as.factor(dt.Hazardous.pred), reference=as.factor(asteroids_split$test$Hazardous),
-  positive="FALSE", mode = "prec_recall") 
-
-folds_confusion <- NULL
-folds_confusion <- Confusion_Sum(folds_confusion, reference=as.factor(asteroids_split$test$Hazardous), data=as.factor(dt.Hazardous.pred))
-img_name_plot <- paste("IMG_asteroids_model_BEST_RNN_Hazardous_confusion" ,".png", sep = "")
-  png(img_name_plot)
-  grid.table(folds_confusion)
-  dev.off()
-
-sens_true = dt.Hazardous.confusion_matrix_true$byClass["Sensitivity"]
-spec_true= dt.Hazardous.confusion_matrix_true$byClass["Specificity"]
-prec_true= dt.Hazardous.confusion_matrix_true$byClass["Precision"]
-recal_true= dt.Hazardous.confusion_matrix_true$byClass["Recall"]
-f1_true= dt.Hazardous.confusion_matrix_true$byClass["F1"]
-
-sens_false =  dt.Hazardous.confusion_matrix_false$byClass["Sensitivity"]
-spec_false =  dt.Hazardous.confusion_matrix_false$byClass["Specificity"]
-prec_false =  dt.Hazardous.confusion_matrix_false$byClass["Precision"]
-recal_false = dt.Hazardous.confusion_matrix_false$byClass["Recall"]
-f1_false =    dt.Hazardous.confusion_matrix_false$byClass["F1"]
-
-Accuracy = dt.Hazardous.confusion_matrix_true$overall['Accuracy']
-MacroSensitivity = (0.5 * sens_true) + (0.5 * sens_false)
-MacroSpecificity = (0.5 * spec_true) + (0.5 * spec_false)
-MacroPrecision = (0.5 * prec_true) + (0.5 * prec_false)
-MacroRecall = (0.5 * recal_true) + (0.5 * recal_false)
-MacroF1 = (0.5 * f1_true) + (0.5 * f1_false)
-
-ROC = ROCFunction.BIN.RNN(as.vector(dt.Hazardous.pred.prob),asteroids_split$test$Hazardous,"TRUE")
-
-mod.name <- paste("Hazardous RNN")
-all.Hazardous$Accuracy[mod.name] <- Accuracy
-all.Hazardous$MacroSensitivity[mod.name] <- MacroSensitivity
-all.Hazardous$MacroSpecificity[mod.name] <- MacroSpecificity
-all.Hazardous$MacroPrecision[mod.name] <- MacroPrecision
-all.Hazardous$MacroRecall[mod.name] <- MacroRecall
-all.Hazardous$MacroF1[mod.name] <- MacroF1
-all.Hazardous$AUC[mod.name] <- ROC$auc
-all.Hazardous$CutOffOpt[mod.name] <- ROC$optcut
-
-all.Hazardous_ROC.name = c(all.Hazardous_ROC.name, mod.name)
-all.Hazardous_ROC.x <- cbindX(all.Hazardous_ROC.x, data.frame(ROC$x.value))
-colnames(all.Hazardous_ROC.x) <- all.Hazardous_ROC.name
-all.Hazardous_ROC.y <- cbindX(all.Hazardous_ROC.y, data.frame(ROC$y.value))
-colnames(all.Hazardous_ROC.y) <- all.Hazardous_ROC.name
-
-all.Hazardous.All[mod.name] <- c(Accuracy, MacroSensitivity, MacroSpecificity, MacroPrecision, MacroRecall, MacroF1, ROC$auc,ROC$optcut)
-tdist <- list()
-tdist$acc <- paste(as.character(round(Accuracy,4)))
-tdist$sens <- paste(as.character(round(MacroSensitivity,4)))
-tdist$spec <- paste(as.character(round(MacroSpecificity,4)))
-tdist$prec <- paste(as.character(round(MacroPrecision,4)))
-tdist$rec <- paste(as.character(round(MacroRecall,4)))
-tdist$f1 <- paste(as.character(round(MacroF1,4)))
-tdist$auc <- paste(as.character(round(ROC$auc,8)))
-tdist$cutoff <- paste(as.character(round(ROC$optcut,5)))
-all.Hazardous.All[mod.name] <- c(tdist$acc,tdist$sens,tdist$spec,tdist$prec,tdist$rec,tdist$f1,tdist$auc,tdist$cutoff)
-
-
-
-# PLOT
-end_table <- 4
-plot.models.color = rainbow(end_table-1)
-
-img_name_plot <- paste("IMG_asteroids_model_BEST_", "ALL_ROC", ".png", sep = "")
-png(img_name_plot,res = 800, height = 10, width = 15, unit='in')
-ROCPlot.x.class = colnames(all.Hazardous_ROC.x)
-ROCPlot.y.class = colnames(all.Hazardous_ROC.y)
-plot.new()
-title(main="BEST MODELS Hazardous ROC", xlab="Sensitivity - True Positive Rate", ylab="Specificity - False Positive Rate")
-for (ROCPlot.x.classindex in 2:length(ROCPlot.x.class)){
-  ROCPlot.name = ROCPlot.x.class[ROCPlot.x.classindex]
-  ROCPlot.y.classindex = which(ROCPlot.y.class == ROCPlot.x.class[ROCPlot.x.classindex])
-  
-  ROCPlot.x = unlist(all.Hazardous_ROC.x[,ROCPlot.x.classindex], use.names=FALSE)
-  ROCPlot.y = unlist(all.Hazardous_ROC.y[,ROCPlot.y.classindex], use.names=FALSE)
-  lines(ROCPlot.x, ROCPlot.y, col=plot.models.color[ROCPlot.x.classindex-1],lwd=1)
-  
-  
-}
-legend("right", title="models",legend=ROCPlot.y.class,lwd=5, col=plot.models.color,
-       horiz=FALSE)
-dev.off()
-
-img_name_plot <- paste("PDF_asteroids_model_BEST_", "Hazardous_performance", ".pdf", sep = "")
-pdf(img_name_plot, height = 20, width = 46)
-grid.table(t(all.Hazardous.All[2:length(all.Hazardous.All)]))
-dev.off()
-
-#
-#
-#
-#
 #Classification
 
 all.Classification <- list()
@@ -553,14 +283,14 @@ rdist$Aten.optcut <- paste(as.character(round(rdist_val,5)))
 all.Classification.ROC.All[mod.name] <- c(rdist$Amor.auc,rdist$Amor.optcut,rdist$Apohele.auc,rdist$Apohele.optcut,rdist$Apollo.auc,rdist$Apollo.optcut,rdist$Aten.auc,rdist$Aten.optcut)
 #SVM
 dt.Classification.model <- svm(Classification ~ Orbit.Axis..AU. + Orbit.Eccentricity + Orbit.Inclination..deg. + Perihelion.Argument..deg. + Node.Longitude..deg. + Mean.Anomoly..deg. + Perihelion.Distance..AU. + Aphelion.Distance..AU. + Orbital.Period..yr. + Minimum.Orbit.Intersection.Distance..AU. + Asteroid.Magnitude,
-  data=asteroids_split$train, kernel="radial", cost=10, type="C-classification",probability = TRUE)
+  data=asteroids_split$train, kernel="linear", cost=10, type="C-classification",probability = TRUE)
 
 dt.Classification.pred <- predict(dt.Classification.model, asteroids_split$test, type = "class")
 dt.Classification.pred.prob <- predict(dt.Classification.model, asteroids_split$test, probability=TRUE)
 
 folds_confusion <- NULL
 folds_confusion <- Confusion_Sum(folds_confusion, reference=asteroids_split$test$Classification, data=dt.Classification.pred)
-img_name_plot <- paste("IMG_asteroids_model_BEST_SWM_Classification_confusion" ,".png", sep = "")
+img_name_plot <- paste("IMG_asteroids_model_BEST_SVM_Classification_confusion" ,".png", sep = "")
   png(img_name_plot)
   grid.table(folds_confusion)
   dev.off()
@@ -648,7 +378,7 @@ colnames(all.Classification_ROC.Aten.x) <- all.Classification_ROC.name
 all.Classification_ROC.Aten.y <- cbindX(all.Classification_ROC.Aten.y, data.frame(dt.Classification.roc.Aten$y.value))
 colnames(all.Classification_ROC.Aten.y) <- all.Classification_ROC.name
 
-all.Hazardous.All[mod.name] <- c(Accuracy, MacroSensitivity, MacroSpecificity, MacroPrecision, MacroRecall, MacroF1)
+all.Classification.All[mod.name] <- c(Accuracy, MacroSensitivity, MacroSpecificity, MacroPrecision, MacroRecall, MacroF1)
 
 tdist <- list()
 tdist$acc <- paste(as.character(round(Accuracy,4)))
@@ -681,10 +411,28 @@ rdist_val = dt.Classification.roc.Aten$optcut
 rdist$Aten.optcut <- paste(as.character(round(rdist_val,5)))
 all.Classification.ROC.All[mod.name] <- c(rdist$Amor.auc,rdist$Amor.optcut,rdist$Apohele.auc,rdist$Apohele.optcut,rdist$Apollo.auc,rdist$Apollo.optcut,rdist$Aten.auc,rdist$Aten.optcut)
 #RNN
-dt.Classification.model = neuralnet(Classification ~ Orbit.Axis..AU. + Orbit.Eccentricity + Orbit.Inclination..deg. + Perihelion.Argument..deg. + Node.Longitude..deg. + Mean.Anomoly..deg. + Perihelion.Distance..AU. + Aphelion.Distance..AU. + Orbital.Period..yr. + Minimum.Orbit.Intersection.Distance..AU. + Asteroid.Magnitude,
-                               asteroids_split$train[350:450,],
-                               hidden = 7,
-                               stepmax = 1e5,
+
+asteroids_split$train$Amor = asteroids_split$train$Classification == "Amor Asteroid"
+asteroids_split$train$Apohele = asteroids_split$train$Classification == "Apohele Asteroid"
+asteroids_split$train$Apollo = asteroids_split$train$Classification == "Apollo Asteroid"
+asteroids_split$train$Aten = asteroids_split$train$Classification == "Aten Asteroid"
+
+
+dt.Classification.model = neuralnet(Amor+Apohele+Apollo+Aten ~ Orbit.Axis..AU._scaled_scaled + Orbit.Eccentricity_scaled + Orbit.Inclination..deg._scaled + Perihelion.Argument..deg._scaled + Node.Longitude..deg._scaled + Mean.Anomoly..deg._scaled + Perihelion.Distance..AU._scaled + Aphelion.Distance..AU._scaled + Orbital.Period..yr._scaled + Minimum.Orbit.Intersection.Distance..AU._scaled + Asteroid.Magnitude_scaled,
+                               asteroids_split$train,
+                               hidden = c(7),
+                               act.fct = "tanh",
+                               
+                               learningrate.limit = NULL,
+                               learningrate.factor =
+                                 list(minus = 0.5, plus = 1.2),
+                               algorithm = "rprop+",
+                               
+                               #err.fct = loss_f,
+                               threshold = 0.5,
+                               lifesign="full",
+                               
+                               stepmax = 1e6,
                                linear.output = TRUE)
 
 dt.Classification.pred = predict(dt.Classification.model, asteroids_split$test)
@@ -814,3 +562,103 @@ rdist$Aten.auc <- paste(as.character(round(rdist_val,8)))
 rdist_val = dt.Classification.roc.Aten$optcut
 rdist$Aten.optcut <- paste(as.character(round(rdist_val,5)))
 all.Classification.ROC.All[mod.name] <- c(rdist$Amor.auc,rdist$Amor.optcut,rdist$Apohele.auc,rdist$Apohele.optcut,rdist$Apollo.auc,rdist$Apollo.optcut,rdist$Aten.auc,rdist$Aten.optcut)
+
+
+end_table <- length(all.Classification$Accuracy)
+plot.models.color = rainbow(end_table-1)
+
+img_name_plot <- paste("IMG_asteroids_model_BEST_", "Classification_KFOLD_ROC", ".png", sep = "")
+png(img_name_plot,res = 800, height = 10, width = 15, unit='in')
+par(mfrow=c(2,2))  
+# Amor
+plot.new()
+ROCPlot.x.class = colnames(all.Classification_ROC.Amor.x)
+ROCPlot.y.class = colnames(all.Classification_ROC.Amor.y)
+
+title(main="ROC Class: Amor", xlab="Sensitivity - True Positive Rate", ylab="Specificity - False Positive Rate")
+for (ROCPlot.x.classindex in 2:length(ROCPlot.x.class)){
+  ROCPlot.name = ROCPlot.x.class[ROCPlot.x.classindex]
+  ROCPlot.y.classindex = which(ROCPlot.y.class == ROCPlot.x.class[ROCPlot.x.classindex])
+  
+  ROCPlot.x = unlist(all.Classification_ROC.Amor.x[,ROCPlot.x.classindex], use.names=FALSE)
+  ROCPlot.y = unlist(all.Classification_ROC.Amor.y[,ROCPlot.y.classindex], use.names=FALSE)
+  lines(ROCPlot.x, ROCPlot.y, col=plot.models.color[ROCPlot.x.classindex-1],lwd=1)    
+}
+legend("right", title="models",legend=ROCPlot.y.class,lwd=5, col=plot.models.color,horiz=FALSE)
+#Apohele
+plot.new()
+ROCPlot.x.class = colnames(all.Classification_ROC.Apohele.x)
+ROCPlot.y.class = colnames(all.Classification_ROC.Apohele.y)
+
+title(main="ROC Class: Apohele", xlab="Sensitivity - True Positive Rate", ylab="Specificity - False Positive Rate")
+for (ROCPlot.x.classindex in 2:length(ROCPlot.x.class)){
+  ROCPlot.name = ROCPlot.x.class[ROCPlot.x.classindex]
+  ROCPlot.y.classindex = which(ROCPlot.y.class == ROCPlot.x.class[ROCPlot.x.classindex])
+  
+  ROCPlot.x = unlist(all.Classification_ROC.Apohele.x[,ROCPlot.x.classindex], use.names=FALSE)
+  ROCPlot.y = unlist(all.Classification_ROC.Apohele.y[,ROCPlot.y.classindex], use.names=FALSE)
+  lines(ROCPlot.x, ROCPlot.y, col=plot.models.color[ROCPlot.x.classindex-1],lwd=1)    
+}
+legend("right", title="models",legend=ROCPlot.y.class,lwd=5, col=plot.models.color,horiz=FALSE)
+#Apollo
+plot.new()
+ROCPlot.x.class = colnames(all.Classification_ROC.Apollo.x)
+ROCPlot.y.class = colnames(all.Classification_ROC.Apollo.y)
+
+title(main="ROC Class: Apollo", xlab="Sensitivity - True Positive Rate", ylab="Specificity - False Positive Rate")
+for (ROCPlot.x.classindex in 2:length(ROCPlot.x.class)){
+  ROCPlot.name = ROCPlot.x.class[ROCPlot.x.classindex]
+  ROCPlot.y.classindex = which(ROCPlot.y.class == ROCPlot.x.class[ROCPlot.x.classindex])
+  
+  ROCPlot.x = unlist(all.Classification_ROC.Apollo.x[,ROCPlot.x.classindex], use.names=FALSE)
+  ROCPlot.y = unlist(all.Classification_ROC.Apollo.y[,ROCPlot.y.classindex], use.names=FALSE)
+  lines(ROCPlot.x, ROCPlot.y, col=plot.models.color[ROCPlot.x.classindex-1],lwd=1)    
+}
+legend("right", title="models",legend=ROCPlot.y.class,lwd=5, col=plot.models.color,horiz=FALSE)
+#Aten
+plot.new()
+ROCPlot.x.class = colnames(all.Classification_ROC.Aten.x)
+ROCPlot.y.class = colnames(all.Classification_ROC.Aten.y)
+
+title(main="ROC Class: Aten", xlab="Sensitivity - True Positive Rate", ylab="Specificity - False Positive Rate")
+for (ROCPlot.x.classindex in 2:length(ROCPlot.x.class)){
+  ROCPlot.name = ROCPlot.x.class[ROCPlot.x.classindex]
+  ROCPlot.y.classindex = which(ROCPlot.y.class == ROCPlot.x.class[ROCPlot.x.classindex])
+  
+  ROCPlot.x = unlist(all.Classification_ROC.Aten.x[,ROCPlot.x.classindex], use.names=FALSE)
+  ROCPlot.y = unlist(all.Classification_ROC.Aten.y[,ROCPlot.y.classindex], use.names=FALSE)
+  lines(ROCPlot.x, ROCPlot.y, col=plot.models.color[ROCPlot.x.classindex-1],lwd=1)    
+}
+legend("right", title="models",legend=ROCPlot.y.class,lwd=5, col=plot.models.color,horiz=FALSE)
+dev.off()
+
+
+
+img_name_plot <- paste("IMG_asteroids_model_BEST_", "Classification_KFOLD_performance_plot_A", ".png", sep = "")
+png(img_name_plot,res = 800, height = 10, width = 15, unit='in')
+par(mfrow=c(2,2)) 
+boxplot(all.Classification$Accuracy[2:end_table],vertical = TRUE, pch=19, las = 2, col = plot.models.color,main="Accuracy")  
+boxplot(all.Classification$MacroSensitivity[2:end_table],vertical = TRUE, pch=19, las = 2, col = plot.models.color,main="MacroSensitivity")  
+dev.off()
+img_name_plot <- paste("IMG_asteroids_model_BEST_", "Classification_KFOLD_performance_plot_B", ".png", sep = "")
+png(img_name_plot,res = 800, height = 10, width = 15, unit='in')
+par(mfrow=c(2,2))  
+boxplot(all.Classification$MacroSpecificity[2:end_table], vertical = TRUE, pch=19, las = 2, col = plot.models.color,main="MacroSpecificity")  
+boxplot(all.Classification$MacroPrecision[2:end_table], vertical = TRUE, pch=19, las = 2, col = plot.models.color,main="MacroPrecision")  
+dev.off()
+img_name_plot <- paste("IMG_asteroids_model_BEST_", "Classification_KFOLD_performance_plot_C", ".png", sep = "")
+png(img_name_plot,res = 800, height = 10, width = 15, unit='in')
+par(mfrow=c(2,2))  
+boxplot(all.Classification$MacroRecall[2:end_table],vertical = TRUE, pch=19, las = 2, col = plot.models.color,main="MacroRecall")  
+boxplot(all.Classification$MacroF1[2:end_table],vertical = TRUE, pch=19, las = 2, col = plot.models.color,main="MacroF1")  
+dev.off()
+
+img_name_plot <- paste("PDF_asteroids_model_BEST_", "Classification_KFOLD_performance_tdist", ".pdf", sep = "")
+pdf(img_name_plot, height = 20, width = 46)
+grid.table(t(all.Classification.All[2:length(all.Classification.All)]))
+dev.off()
+
+img_name_plot <- paste("PDF_asteroids_model_BEST_", "Classification_KFOLD_performance_ROC", ".pdf", sep = "")
+pdf(img_name_plot, height = 20, width = 46)
+grid.table(t(all.Classification.ROC.All[2:length(all.Classification.ROC.All)]))
+dev.off()

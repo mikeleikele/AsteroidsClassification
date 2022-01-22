@@ -9,6 +9,8 @@ library(ROCR)
 library(gdata)
 library(reshape)
 library(devtools)
+library(downloader)
+library(scales)
 source_url('https://gist.githubusercontent.com/fawda123/7471137/raw/466c1474d0a505ff044412703516c34f1a4684a5/nnet_plot_update.r')
 
 #t-distribution
@@ -78,7 +80,6 @@ ROCFunction.MULTI <- function(ROCFun.pred.prob, testLabels, classInLabel){
     auc = ROCFun.perf.rocr@y.values, optcut = ROCFun.perf.optcut))
 }
 
-
 actFun <- list()
 actFun$sigmoid <- function(x) {
   1 / (1 + exp(-x))
@@ -90,17 +91,17 @@ actFun$softplus <- function(x){
   log(1+exp(x))
 }
 #load dataset RObject as asteroids_split
-load("DATA_asteroids_dataset_split_0.7.RData")
+load("DATA_asteroids_dataset_split_neg_0.7.RData")
 
 folds.number = 5
 
-hiddenLayers_list = list(c(7))#,c(14,7))#,c(5),c(10,5))
-actFun_list = list("tanh","logistic")#,actFun$softplus,actFun$relu,actFun$sigmoid)
-actFun_listname = list("tanh","logistic")#,"softplus","relu","sigmoid")
+hiddenLayers_list = list(c(7), c(12, 7 ))#,c(14,7))#,c(5),c(10,5))
+actFun_list = list(actFun$softplus,"logistic","tanh" )#,actFun$softplus,actFun$relu,actFun$sigmoid)
+actFun_listname = list("softplus","logistic","tanh")#,"softplus","relu","sigmoid")
 learningRate_list = list(1e-4)
-lossFun_list = list(NULL)
-lossFun_listname = list("Loss A")
-stepmax_val = 1e5
+lossFun_list = list('ce')
+lossFun_listname = list('ce')
+stepmax_val = 1e6
 
 folds <- split(asteroids_split$train, cut(sample(1:nrow(asteroids_split$train)), folds.number))
 rm(folds.number)
@@ -128,6 +129,7 @@ rnn.Hazardous.All["Performance"] = c("Accuracy","MacroSensitivity","MacroSpecifi
 rm(mx)
 
 rnn.Hazardous.model <- NULL
+
 for (hl in 1:length(hiddenLayers_list)) {
   for (ac in 1:length(actFun_list)) {
     for (lrr in 1:length(learningRate_list)) {
@@ -157,12 +159,13 @@ for (hl in 1:length(hiddenLayers_list)) {
           
           #manca LOSS loss_f
           rnn.Hazardous.model <- neuralnet(Hazardous ~ Orbit.Axis..AU._scaled_scaled + Orbit.Eccentricity_scaled + Orbit.Inclination..deg._scaled + Perihelion.Argument..deg._scaled + Node.Longitude..deg._scaled + Mean.Anomoly..deg._scaled + Perihelion.Distance..AU._scaled + Aphelion.Distance..AU._scaled + Orbital.Period..yr._scaled + Minimum.Orbit.Intersection.Distance..AU._scaled + Asteroid.Magnitude_scaled,
-                              fold.train[1:200,],
+                              data=fold.train,
                               hidden = hiddenL_val,
                               act.fct = actFun_val,
                               learningrate = lr_val,
-                              #lossFunction = loss_f,
-                              stepmax = 1e7,
+                              #err.fct = loss_f,
+                              stepmax = stepmax_val,
+                              lifesign.step="1000",
                               linear.output = FALSE)
           
           rnn.Hazardous.pred = predict(rnn.Hazardous.model, fold.valid)[, 1] > 0.5
@@ -284,7 +287,7 @@ png(img_name_plot,res = 800, height = 10, width = 15, unit='in')
 ROCPlot.x.class = colnames(rnn.Hazardous_ROC.x)
 ROCPlot.y.class = colnames(rnn.Hazardous_ROC.y)
 plot.new()
-title(main="RNN Hazardous ROC", xlab="Sensitivity - True Positive Rate", ylab="Specificity - False Positive Rate")
+title(main="RNN Hazardous ROC", xlab="Specificity - False Positive Rate", ylab="Specificity - True Positive Rate")
 for (ROCPlot.x.classindex in 2:length(ROCPlot.x.class)){
   ROCPlot.name = ROCPlot.x.class[ROCPlot.x.classindex]
   ROCPlot.y.classindex = which(ROCPlot.y.class == ROCPlot.x.class[ROCPlot.x.classindex])
@@ -360,11 +363,11 @@ dev.off()
 folds.number = 5
 
 hiddenLayers_list = list(c(7),c(14,7))#c(5),c(10,5))
-actFun_list = list("tanh")#,"logistic")#,actFun$softplus,actFun$relu,actFun$sigmoid)
-actFun_listname = list("tanh")#,"logistic")#,"softplus","relu","sigmoid")
+actFun_list = list("tanh",actFun$softplus)#,"logistic")#,,actFun$relu,actFun$sigmoid)
+actFun_listname = list("tanh","softplus")#,"logistic")#,"","relu","sigmoid")
 learningRate_list = list(1e-4)
-lossFun_list = list(NULL)
-lossFun_listname = list("Loss A")
+lossFun_list = list('sse', 'ce')
+lossFun_listname = list("sse", 'ce')
 stepmax_val = 1e5
 
 asteroids_split$train$Amor = asteroids_split$train$Classification == "Amor Asteroid"
@@ -452,7 +455,9 @@ for (hl in 1:length(hiddenLayers_list)) {
                                                act.fct = actFun_val,
                                                learningrate = lr_val,
                                                stepmax=stepmax_val,
-                                               linear.output = TRUE)
+                                               lifesign.step="1000",
+                                               linear.output = TRUE
+                                               )
             
           rnn.Classification.pred = predict(rnn.Classification.model, fold.valid)
           rnn.Classification.pred.max = as.factor(c("Amor Asteroid", "Apohele Asteroid", "Apollo Asteroid", "Aten Asteroid")[apply(rnn.Classification.pred, 1, which.max)])
@@ -507,7 +512,7 @@ for (hl in 1:length(hiddenLayers_list)) {
         }
         
         #end kfold
-        img_name_plot <- paste("IMG_asteroids_model_SWM_", rnn.name ,"_confusion" ,".png", sep = "")
+        img_name_plot <- paste("IMG_asteroids_model_RNN_", rnn.name ,"_confusion" ,".png", sep = "")
         png(img_name_plot,res = 800, height = 10, width = 15, unit='in')
           grid.table(table(folds_confusion))
           dev.off()
