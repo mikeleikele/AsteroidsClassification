@@ -4,7 +4,7 @@ load("DATA_asteroids_dataset.RData")
 
 ####### Preliminary Analysis ############
 
-dim(asteroids_dataset)
+dim(asteroids_data)
 
 
 #### get types of each variable
@@ -13,11 +13,11 @@ sapply(asteroids_data, class)
 
 
 ### count frequency of each class
-levels(asteroids_data$Hazardous)
+levels(asteroids_data$Hazardous.int)
 
-class_frequencies = table(asteroids_data$Hazardous)
+class_frequencies = table(asteroids_data$Hazardous.int)
 
-
+class_frequencies
 asteroid_type = table(asteroids_data$Classification)
 
 asteroid_type
@@ -26,16 +26,42 @@ asteroid_type
 pie(class_frequencies)
 pie(asteroid_type)
 
-## bar plot
-barplot(table(asteroids_data$Hazardous))
 
+
+
+## bar plot
+plot_name <- paste("IMG_asteroids_barplot_", "harazdous" ,".png", sep = "")
+png(plot_name)
+barplot(table(asteroids_data$Hazardous))
+dev.off()
+
+plot_name <- paste("IMG_asteroids_barplot_", "classification" ,".png", sep = "")
+png(plot_name)
 barplot(asteroid_type)
+dev.off()
+
+
+### hazardous by class
+
+false_hazard <- asteroids_data[asteroids_data$Hazardous == FALSE, ]
+true_hazard <- asteroids_data[asteroids_data$Hazardous == TRUE, ]
+
+false_hazard
+true_hazard
+plot_name <- paste("IMG_asteroids_barplot_", "classification_hazardous" ,".png", sep = "")
+png(plot_name)
+par(mfrow = c (1,2))
+
+barplot(table(false_hazard$Classification), legend.text = 'Hazardous = FALSE')
+barplot(table(true_hazard$Classification), , legend.text = 'Hazardous = TRUE')
+dev.off()
 # get various statistics of each covariate
 ### mean, sd, var, min, max, median, range, quantile
 numeric_covariates = asteroids_data[,c("Orbit.Axis..AU." , "Orbit.Eccentricity" , "Orbit.Inclination..deg." , "Perihelion.Argument..deg.",
                                "Node.Longitude..deg." , "Mean.Anomoly..deg." , "Perihelion.Distance..AU." , "Aphelion.Distance..AU.",
                                "Orbital.Period..yr.", "Minimum.Orbit.Intersection.Distance..AU.",  "Asteroid.Magnitude"
                                      )]
+
 factor_covariates = asteroids_data[,c("Orbital.Reference", "Classification", "Epoch..TDB." )]
 
 all_covariates <- cbind(numeric_covariates, factor_covariates)
@@ -213,7 +239,9 @@ for (i in 9:11) {
 dev.off()
 
 
-#### correlation matrix
+plot_name <- paste("IMG_dataset_analysis_orbitintersection_", "hazardous" ,".png", sep = "")
+
+png(plot_name)
 
 # change fill and outline color manually 
 ggplot(asteroids_data, aes(x =Minimum.Orbit.Intersection.Distance..AU. )) +
@@ -222,7 +250,27 @@ ggplot(asteroids_data, aes(x =Minimum.Orbit.Intersection.Distance..AU. )) +
   scale_color_manual(values = c("#00AFBB", "#E7B800")) +
   scale_fill_manual(values = c("#00AFBB", "#E7B800"))
 
+dev.off()
+
+plot_name <- paste("IMG_dataset_analysis_orbitintersection_", "hazardous" ,".png", sep = "")
+
+png(plot_name)
+
 # change fill and outline color manually 
+ggplot(asteroids_data, aes(x =Classification , y=Hazardous)) +
+  geom_bar(aes(color = Hazardous, fill = Hazardous), stat ="identity",
+           position = "identity") +
+  scale_color_manual(values = c("#00AFBB", "#E7B800")) +
+  scale_fill_manual(values = c("#00AFBB", "#E7B800"))
+
+
+ggplot(asteroids_data, aes(x =Classification , y=Classification)) +
+  geom_bar(aes(color = Hazardous, fill = Hazardous), stat ="identity",
+           position = "identity") +
+  scale_color_manual(values = c("#00AFBB", "#E7B800")) +
+  scale_fill_manual(values = c("#00AFBB", "#E7B800"))
+
+
 ggplot(asteroids_data, aes(x =Orbit.Axis..AU. )) +
   geom_histogram(aes(color = Hazardous, fill = Hazardous), 
                  position = "identity", bins = 30, alpha = 0.4) +
@@ -232,21 +280,20 @@ ggplot(asteroids_data, aes(x =Orbit.Axis..AU. )) +
 
 library(caret)
 
-#### multivariate plots
-par(mfrow = c (1,1))
-x = numeric_covariates[, 1]
+#### univariate plots
+plot_name <- paste("IMG_asteroids_multivariate_scatter", "period_eccentricity" ,".png", sep = "")
+
+png(plot_name)
+
+par(mfrow = c (4,3))
+x = numeric_covariates
 y = asteroids_data$Classification
 featurePlot(x,y)
-featurePlot(x,y, plot = 'density', scales=list(x=list(relation='free'), y= list(relation='free')), auto.key=list(columns=3))
-
-par(mfrow = c (1,1))
-ggplot(asteroids_data, aes(x = columns[1], 
-                           y = columns[2] )) +
-                          geom_point()
+featurePlot(x,y, plot = 'density', scales=list(x=list(relation='free'), y= list(relation='free')), auto.key=list(columns=2))
 
 
-plot(x=asteroids_data$Node.Longitude..deg. , y=asteroids_data$Minimum.Orbit.Intersection.Distance..AU., col=asteroids_data$Hazardous)
-plot(x=asteroids_data$Mean.Anomoly..deg., y=asteroids_data$Eccentricity, col=asteroids_data$Hazardous)
+dev.off()
+
 
 ### ggplot
 
@@ -254,40 +301,63 @@ library(ggplot2)
 library(ggExtra)
 
 
-# Save the scatter plot in a variable
-ggplot(asteroids_data, aes(x = Orbital.Period..yr. , y = Mean.Anomoly..deg., color=Hazardous) ) +
-  geom_point()
-
-ggplot(asteroids_data, aes(x = Orbital.Period..yr. , y = Orbit.Eccentricity, color=Classification) ) +
-  geom_point()
+#ggplot(asteroids_data, aes(x = Orbital.Period..yr. , y = Mean.Anomoly..deg., color=Hazardous) ) +
+ # geom_point()
 
 
+#ggplot(asteroids_data, aes(x = Orbital.Period..yr. , y = Orbit.Eccentricity, color=Classification) ) +
+#  geom_point()
+
+##### MULTIVARIATE PLOT
 
 plot_name <- paste("IMG_asteroids_multivariate_scatter", "period_eccentricity" ,".png", sep = "")
 
 png(plot_name)
 
 
-ggplot(asteroids_data, aes(y = Orbital.Period..yr. , x = Orbit.Eccentricity, color=Classification) ) +
+ggplot(asteroids_data, aes(x = Orbital.Period..yr. , y = Orbit.Eccentricity, color=Classification) ) +
   geom_point()
+
 
 dev.off()
 
 library(ggplot2)
+library(caret)
 
 
+featurePlot(x=x, y=y, plot='pairs', auto.key=list())
 
-
+plot_name <- paste("IMG_asteroids_multivariate_scatter_", "period_eccentricity" ,".png", sep = "")
+png(plot_name)
 ggplot(asteroids_data, aes(x = Orbital.Period..yr. , y = Orbit.Eccentricity, color=Hazardous) ) +
   geom_point()
+dev.off()
 
+plot_name <- paste("IMG_asteroids_multivariate_scatter_", "magintude_inclination" ,".png", sep = "")
+png(plot_name)
 ggplot(asteroids_data, aes(x =Asteroid.Magnitude , y = Orbit.Inclination..deg., color=Hazardous) ) +
   geom_point()
+dev.off()
+plot_name <- paste("IMG_asteroids_multivariate_scatter_", "intersection_eccentricity" ,".png", sep = "")
+
+png(plot_name)
 
 ggplot(asteroids_data, aes(x = Minimum.Orbit.Intersection.Distance..AU. , y = Orbit.Eccentricity, color=Hazardous) ) +
   geom_point()
 
-plot_name <- paste("IMG_asteroids_multivariate_scatter_", "magintude_orbitintersection" ,".png", sep = "")
+dev.off()
+
+plot_name <- paste("IMG_asteroids_multivariate_scatter_", "intersection_eccentricity_classification" ,".png", sep = "")
+
+png(plot_name)
+
+
+ggplot(asteroids_data, aes(x = Minimum.Orbit.Intersection.Distance..AU. , y = Orbit.Eccentricity, color=Classification) ) +
+  geom_point()
+
+dev.off()
+
+plot_name <- paste("IMG_asteroids_multivariate_scatter_", "intersection_magnitude" ,".png", sep = "")
 
 png(plot_name)
 
@@ -296,11 +366,20 @@ ggplot(asteroids_data, aes(x = Minimum.Orbit.Intersection.Distance..AU. , y = As
   geom_point()
 
 
+dev.off()
+
+plot_name <- paste("IMG_asteroids_multivariate_scatter_", "intersection_eccentricity_classification" ,".png", sep = "")
+
+png(plot_name)
+
+ggplot(asteroids_data, aes(x = Minimum.Orbit.Intersection.Distance..AU. , y = Asteroid.Magnitude, color=Classification) ) +
+  geom_point()
+
 
 dev.off()
 
 
-ggplot(asteroids_data , aes(x = Asteroid.Magnitude , y = Mean.Anomoly..deg.,  color=Hazardous))
+#ggplot(asteroids_data , aes(x = Asteroid.Magnitude , y = Mean.Anomoly..deg.,  color=Hazardous))
 
 
 
@@ -340,7 +419,7 @@ dev.off()
 
 
 palette = colorRampPalette(c("green", "white", "red")) (20)
-heatmap(x = mydata.cor, col = palette, symm = TRUE)
+heatmap(x = numeric_covariates.cor, col = palette, symm = TRUE)
 
 
 install.packages('ggcorrplot')
@@ -369,9 +448,3 @@ numeric_covariates.coeff = numeric_covariates.rcorr$r
 numeric_covariates.p = numeric_covariates.rcorr$P
 
 
-
-### best variable up - Jupiter Tisserand - mean Motion  Miss dist lunar
-#pca 1
-#  apelion dist , orbital period , semi major axis
-# pca 2
-# minimum orbit intersection perihelion arg , absolute magnituted uncertainity
